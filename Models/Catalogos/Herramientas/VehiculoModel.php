@@ -39,15 +39,24 @@ class VehiculoModel extends DB
 
         return DB::query($sql, [':suc' => $suc, ':cvem' => $cve, ':palabra' => "%{$palabra}%"]);
     }        
+    private static function sucursalSesion()
+    {
+        $sucursal = $_SESSION['cveSucursal'] ?? null;
+        if (is_string($sucursal) && preg_match('/^(?:i|d|s|b|N):/', $sucursal)) {
+            $sucursal = unserialize($sucursal, ['allowed_classes' => false]);
+        }
+        return (int)$sucursal;
+    }
+
     static function All($cvevehiculo)
     {
         $sql = " SELECT DISTINCT(M.PKINTID_MARCA) ID, M.VCHMARCA, M.BITESTATUS
                 FROM TblMarca M INNER JOIN 
                     TblTipo T ON T.FKINTID_MARCA = M.PKINTID_MARCA INNER JOIN
                     TblClas_Vehiculo CV ON CV.PKINTID_CLASVEHICULO = T.INTID_CLASVEHICULO
-                    WHERE PKINTID_CLASVEHICULO = :clas AND BITESTATUS = 1";
+                    WHERE T.FKINTID_SUCURSAL = :sucursal AND T.INTID_CLASVEHICULO = :clas AND M.BITESTATUS = 1 ORDER BY M.VCHMARCA";
 
-        return DB::query($sql, [':clas' => $cvevehiculo]);
+        return DB::query($sql, [':sucursal' => self::sucursalSesion(), ':clas' => $cvevehiculo]);
     }
     static function MarcaSearch($cve, $palabra)
     {
@@ -55,8 +64,9 @@ class VehiculoModel extends DB
                 FROM TblMarca M 
                   INNER JOIN TblTipo T ON T.FKINTID_MARCA = M.PKINTID_MARCA 
                   INNER JOIN TblClas_Vehiculo CV ON CV.PKINTID_CLASVEHICULO = T.INTID_CLASVEHICULO
-                WHERE PKINTID_CLASVEHICULO = :cve AND M.VCHMARCA LIKE :palabra AND BITESTATUS = 1 LIMIT 20";
+                WHERE T.FKINTID_SUCURSAL = :sucursal AND T.INTID_CLASVEHICULO = :cve
+                  AND M.VCHMARCA LIKE :palabra AND M.BITESTATUS = 1 ORDER BY M.VCHMARCA LIMIT 20";
 
-        return DB::query($sql, [':cve' => $cve, ':palabra' => "%{$palabra}%"]);
+        return DB::query($sql, [':sucursal' => self::sucursalSesion(), ':cve' => $cve, ':palabra' => "%{$palabra}%"]);
     }
 }

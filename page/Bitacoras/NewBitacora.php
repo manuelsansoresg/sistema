@@ -606,10 +606,35 @@
             idClase = $(this).val() || 0;
             idMarca = 0;
 
-            $('#cbomarca').val(null).trigger('change');
-            $('#cbotipo').val(null).trigger('change');
+            $('#cbomarca').select2('close').empty().trigger('change');
+            $('#cbotipo').select2('close').empty().trigger('change');
         });
         
+        // Ignorar respuestas de una clasificación o marca que ya cambió.
+        function transporteVehiculo(combo, params, success, failure) {
+            const vigente = function() {
+                return String(params.data.qclas) === String(idClase) &&
+                    (combo === '#cbomarca' || String(params.data.qmarca) === String(idMarca));
+            };
+            if (!vigente() || !idClase || (combo === '#cbotipo' && !idMarca)) {
+                success([]);
+                return { abort: function() {} };
+            }
+            const request = $.ajax(params);
+            request.done(function(response) {
+                if (vigente()) success(response);
+            });
+            request.fail(function(xhr, status, error) {
+                if (status === 'abort' || !vigente()) return;
+                console.error('Error al cargar ' + (combo === '#cbomarca' ? 'Marca' : 'Tipo'), {
+                    status: xhr.status, error: error, response: xhr.responseText
+                });
+                $(combo).empty().trigger('change');
+                failure(xhr, status, error);
+            });
+            return request;
+        }
+
         /* Cargar las marcas */    
         $('#cbomarca').select2(
         {
@@ -618,6 +643,9 @@
             ajax:
             {
                 url:'<?=base_url?>/Bitacoras/GetAllMarca',
+                transport:function(params, success, failure) {
+                    return transporteVehiculo('#cbomarca', params, success, failure);
+                },
                 type:'POST',
                 dataType:'json',
                 delay:250,
@@ -639,7 +667,7 @@
         $('#cbomarca').on('change.erpDependencia', function(e)
         {
             idMarca = $(this).val() || 0;
-            $('#cbotipo').val(null).trigger('change');
+            $('#cbotipo').select2('close').empty().trigger('change');
         });
 
         $('#cbotipo').select2({
@@ -647,6 +675,9 @@
             placeholder:'Seleccione tipo',
             ajax:{
                 url:'<?=base_url?>/Bitacoras/GetAllTipo',
+                transport:function(params, success, failure) {
+                    return transporteVehiculo('#cbotipo', params, success, failure);
+                },
                 type:'POST',
                 dataType:'json',
                 delay:250,
