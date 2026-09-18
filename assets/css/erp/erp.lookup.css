@@ -1,0 +1,16 @@
+    .erp-lookup{
+        display:flex;
+    }
+    .erp-lookup .erp-input{
+        border-radius:4px 0 0 4px;
+        border-right:none;
+    }
+    .erp-lookup button{
+        width:30px;
+        border:1px solid var(--erp-border);
+        background:#fafafa;
+    }
+    .erp-lookup button:hover{
+        background:var(--erp-primary);
+        color:white;
+    }

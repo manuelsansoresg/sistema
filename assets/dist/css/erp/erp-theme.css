@@ -1,0 +1,245 @@
+    /* Variables globales */    
+    :root
+    {
+        /*======== COLORES ========*/
+        --erp-primary:#1565C0;
+        --erp-primary-light:#42A5F5;
+        --erp-primary-dark:#0D47A1;
+        --erp-success:#43A047;
+        --erp-danger:#E53935;
+        --erp-warning:#FB8C00;
+        --erp-info:#039BE5;
+        --erp-sidebar:#263238;
+        --erp-sidebar-hover:#37474F;
+        --erp-sidebar-active:#1565C0;
+        --erp-body:#F4F6F9;
+        --erp-card:#FFFFFF;
+        --erp-border:#E4E7EC;
+        --erp-text:#37474F;
+        --erp-text-light:#607D8B;
+        --erp-shadow-sm:0 2px 4px rgba(0,0,0,.05);
+        --erp-shadow:0 4px 12px rgba(0,0,0,.08);
+        --erp-shadow-lg:0 10px 30px rgba(0,0,0,.15);
+        --erp-radius:8px;
+        --erp-speed:.20s;
+    }
+    /*Reset*/
+    *{
+        box-sizing:border-box;
+    }
+    html
+    {
+        font-size:14px;
+    }
+
+    body
+    {
+        background:var(--erp-body);
+        color:var(--erp-text);
+        font-family:"Segoe UI",Roboto,Arial,sans-serif;
+        font-size:13px;
+        overflow-x:hidden;
+    }
+    /*TipoGrafia*/
+    h1
+    {
+        font-size:28px;
+        font-weight:600;
+    }
+    h2
+    {
+        font-size:24px;
+        font-weight:600;
+    }
+    h3
+    {
+        font-size:20px;
+        font-weight:600;
+    }
+    h4
+    {
+        font-size:17px;
+        font-weight:600;
+    }
+    h5
+    {
+        font-size:15px;
+    }
+    small
+    {
+        color:#7B8794;
+    }
+    /* LINK*/
+    a
+    {
+        color:var(--erp-primary);
+        transition:all var(--erp-speed);
+    }
+    a:hover
+    {
+        color:var(--erp-primary-dark);
+        text-decoration:none;
+    }
+    /*Scroll*/
+    ::-webkit-scrollbar
+    {
+        width:8px;
+        height:8px;
+    }
+    ::-webkit-scrollbar-track
+    {
+        background:#ECEFF1;
+    }
+    ::-webkit-scrollbar-thumb
+    {
+        background:#B0BEC5;
+        border-radius:20px;
+    }
+    ::-webkit-scrollbar-thumb:hover
+    {
+        background:#78909C;
+    }
+    /*Content*/
+    .content
+    {
+        padding:20px;
+    }
+    .content-wrapper
+    {
+        background:var(--erp-body);
+    }
+    /* Cards */
+    .box
+    {
+        border:none;
+        border-radius:var(--erp-radius);
+        background:#FFF;
+        box-shadow:var(--erp-shadow-sm);
+        transition:all .25s;
+        overflow:hidden;
+    }
+    .box:hover
+    {
+        box-shadow:var(--erp-shadow);
+    }
+    /*Header Cards*/
+    .box-header
+    {
+        border:none;
+        padding:18px 20px;
+        background:#FFF;
+    }
+    .box-header.with-border
+    {
+        border-bottom:1px solid var(--erp-border);
+    }
+    .box-title
+    {
+        font-size:16px;
+        font-weight:600;
+    }
+    /*Body Cards*/
+    .box-body
+    {
+        padding:20px;
+    }
+    /*Footer Cards*/
+    .box-footer
+    {
+        background:#FAFBFC;
+        border-top:1px solid var(--erp-border);
+    }
+    /*Inputs*/
+    .form-control
+    {
+        border-radius:6px;
+        border:1px solid #D7DCE2;
+        box-shadow:none;
+        height:36px;
+        transition:.2s;
+    }
+    /* Focus Inputs*/
+    .form-control:focus
+    {
+        border-color:#1565C0;
+        box-shadow:0 0 0 3px rgba(21,101,192,.10);
+    }
+    /*Labels*/
+    label
+    {
+        font-weight:600;
+        color:#455A64;
+        margin-bottom:6px;
+    }
+    /*Utilidades*/
+    .erp-card
+    {
+        background:#FFF;
+        border-radius:8px;
+        box-shadow:var(--erp-shadow-sm);
+    }
+    .erp-radius
+    {
+        border-radius:8px;
+    }
+    .erp-shadow
+    {
+        box-shadow:var(--erp-shadow);
+    }
+    .erp-pointer
+    {
+        cursor:pointer;
+    }
+    .erp-flex
+    {
+        display:flex;
+    }
+    .erp-center
+    {
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .erp-right
+    {
+        text-align:right;
+    }
+    .erp-bold
+    {
+        font-weight:600;
+    }
+    /* Colores */
+    .text-primary
+    {
+        color:var(--erp-primary)!important;
+    }
+    .text-success
+    {
+        color:var(--erp-success)!important;
+    }
+    .text-danger
+    {
+        color:var(--erp-danger)!important;
+    }
+    .text-warning
+    {
+        color:var(--erp-warning)!important;
+    }
+    /*Animaciones*/
+    .fade-card
+    {
+        animation:fadeCard .25s;
+    }
+    @keyframes fadeCard
+    {
+        0%
+        {
+            opacity:0;
+            transform:translateY(8px);
+        }
+        100%
+        {
+            opacity:1;
+            transform:none;
+        }
+    }

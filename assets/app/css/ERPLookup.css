@@ -1,0 +1,253 @@
+/*=========================================================
+    ERP LOOKUP FRAMEWORK
+==========================================================*/
+    .erpLookupWindow{
+        border:1px solid #cfd8e3;
+        border-radius:6px;
+        overflow:hidden;
+        /*box-shadow:0 10px 35px rgba(0,0,0,.25);*/
+        box-shadow:0 15px 45px rgba(0,0,0,.20);
+        display:flex;
+        flex-direction:column;
+        height:100%;
+        width:100%;
+    }
+/*==============================
+    TITULO
+==============================*/
+    .erpLookupWindow .k-window-titlebar{
+        /*background:#3c8dbc;
+        border:none;
+        color:#fff;
+        height:70px;
+        line-height:38px;
+        font-size:14px;
+        font-weight:600;
+        padding-left:12px;*/
+        /*background:linear-gradient(#168db8,#0f7aa1);*/
+        background:#3c8dbc;
+        color:#FFF;
+        font-size:15px;
+        font-weight:600;
+        border:none;
+        height:40px;        
+    }
+    .erpLookupWindow .k-window-title{
+        color:#FFF;
+    }
+    .erpLookupWindow .k-window-actions{
+        margin-top:4px;
+    }
+    .erpLookupWindow .k-window-action{
+        color:white;
+    }
+    .erpLookupWindow .k-window-content{
+        padding:0;
+        overflow:hidden;
+        background:white;
+    }
+/*=========================================================
+    TOOLBAR
+==========================================================*/
+
+    .erpLookupToolbar{
+        background:#f7f9fc;
+        border-bottom:1px solid #d9e0e7;
+        padding:8px 10px;
+        flex:0 0 48px;
+    }
+/*=========================================================
+    SEARCH
+==========================================================*/   
+    .erpLookupSearchBox{
+        position:relative;
+        width:380px;
+    }
+    .erpLookupSearchBox i{
+        position:absolute;
+        left:10px;
+        top:9px;
+        color:#999;
+        font-size:14px;        
+    }
+
+    .erpLookupSearch{
+        width:100%;
+        height:34px;
+        border:1px solid #cfd8e3;
+        border-radius:18px;
+        padding-left:36px;
+        padding-right:8px;
+        transition:.25s;
+        outline:none;
+    }
+
+    .erpLookupSearch:focus{
+        border-color:#3c8dbc;
+        box-shadow:0 0 8px rgba(60,141,188,.25);
+    }
+/*=========================================================
+    GRID
+==========================================================*/
+    .erpLookupGrid {
+        border:none;
+        font-size:12px;
+        flex:1;
+        overflow:hidden;
+    }
+    .erpLookup .k-grid{
+        border:none;
+    }
+    .erpLookup .k-grid-header{
+        /*background:#f3f6f9;*/
+        border-bottom:1px solid #d9e0e7;
+        background:#f3f5f7;
+    }
+    .erpLookup .k-header{
+        /*background:#f3f6f9;*/
+        color:#444;
+        font-size:12px;
+        font-weight:bold;   
+        background:#f3f5f7;
+        font-weight:600;
+    }
+    .erpLookupGrid .k-grid-content{
+        overflow-y:auto !important;
+    }
+/*=========================================================
+    FILAS
+==========================================================*/
+    .erpLookup tbody tr{
+        transition:.15s;
+        height:30px;
+    }
+    .erpLookup tbody tr:nth-child(even){
+        background:#fbfbfb;
+    }
+    .erpLookup  tbody tr:hover{
+        background:#eaf4ff;        
+        cursor:pointer;
+    }
+/*=========================================================
+    FILA SELECCIONADA
+==========================================================*/
+    .erpLookup .k-state-selected{
+        background:#3c8dbc !important;
+        color:white !important;
+    }
+    .erpLookup .k-state-selected td{
+        color:white !important;
+    }
+    .erpLookupWindow .k-state-selected{
+        background:#168db8 !important;
+        color:white !important;
+    }
+/*=========================================================
+    CELDAS
+==========================================================*/
+    .erpLookupGrid td{
+        font-size:12px;
+        padding:6px 8px;
+    }
+/*=========================================================
+    FOOTER
+==========================================================*/
+    .erpLookupFooter{
+        background:#fafafa;
+        border-top:1px solid #ddd;
+        height:32px;
+        line-height:32px;
+        font-size:11px;
+        color:#666;
+        /*padding:0 10px;*/
+        display:flex;
+        justify-content:space-between;
+        align-items:center;                
+        padding:6px 12px; 
+        flex:0 0 34px;        
+    }
+    .erpLookupFooterLeft{
+        float:left;
+    }
+    .erpLookupFooterRight{
+        float:right;
+    }
+/*=========================================================
+    BADGE
+==========================================================*/    
+    .erpLookupBadge{
+        display:inline-block;
+        padding:3px 10px;
+        border-radius:12px;
+        /*background:#3c8dbc;*/
+        background:#1693c6;   
+        color:white;
+        font-size:11px;
+    }
+/*=========================================================
+    PAGINADOR
+==========================================================*/
+    .erpLookupWindow .k-pager-wrap{
+        background:#fafafa;
+        border-top:none;
+    }
+    .erpLookupWindow .k-pager-wrap .k-link{
+        border-radius:50%;
+    }
+/*=========================================================
+    SCROLL
+==========================================================*/
+    .erpLookup .k-grid-content::-webkit-scrollbar{
+        width:10px;
+        height:10px;
+
+    }
+    .erpLookup .k-grid-content::-webkit-scrollbar-thumb{
+        background:#c4ccd5;
+        border-radius:8px;
+    }
+    .erpLookup .k-grid-content::-webkit-scrollbar-thumb:hover{
+        background:#9da8b3;
+    }
+/*=========================================================
+    LOADING
+==========================================================*/
+    .erpLookupLoading{
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        height:100%;
+        background:rgba(255,255,255,.70);
+        z-index:999;
+    }
+    .erpLookupLoading i{
+        position:absolute;
+        top:45%;
+        left:48%;
+        font-size:28px;
+        color:#3c8dbc;
+    }
+    /*=========================================================
+        ANIMACION
+    ==========================================================*/
+    .erpLookupWindow{
+        animation:erpLookupShow .18s ease;
+    }
+    @keyframes erpLookupShow{
+        from{
+            opacity:0;
+            transform:scale(.97);
+        }
+        to{
+            opacity:1;
+            transform:scale(1);
+        }
+    }
+    /* ETIQUETAS */
+    .erpShortcut{
+        background:#eceff2;
+        padding:3px 8px;
+        border-radius:3px;
+        margin-left:4px;
+    }

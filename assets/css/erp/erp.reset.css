@@ -1,0 +1,37 @@
+/********************************************
+    BODY
+********************************************/
+body{
+    background:var(--erp-background);
+    color:var(--erp-text);
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+    font-size:13px;
+}
+/********************************************
+    TITULOS
+********************************************/
+h1,h2,h3,h4,h5,h6{
+    margin:0;
+    font-weight:600;
+}
+/********************************************
+    LABEL
+********************************************/
+label{
+    font-weight:600;
+    margin-bottom:4px;
+    color:#555;
+}
+/********************************************
+    INPUT
+********************************************/
+input,select,textarea{
+    box-shadow:none!important;
+    outline:none;
+}
+/********************************************
+    BOTONES
+********************************************/
+button{
+    transition:var(--erp-transition);
+}

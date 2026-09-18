@@ -1,0 +1,98 @@
+    .erp-toolbar{
+        background:#FFF;
+        border:1px solid var(--erp-border);
+        border-radius:var(--erp-radius-sm);
+        box-shadow:var(--erp-shadow-xs);
+        margin-bottom:12px;
+    }
+    .erp-toolbar-header{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        height:42px;
+        padding:0 15px;
+        border-bottom:1px solid var(--erp-border);
+    }
+    .erp-toolbar-body{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding:8px 10px;
+    }
+    .erp-toolbar-left{
+        display:flex;
+        align-items:center;
+        gap:5px;
+    }
+    .erp-toolbar-right{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        margin-left:auto;
+    }
+    .erp-toolbar-title{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:16px;
+        font-weight:600;
+    }
+    .erp-toolbar-title i{
+        color:var(--erp-primary);
+    }
+    .erp-document{
+        color:#777;
+        font-size:12px;
+    }
+    .erp-status{
+        padding:3px 8px;
+        border-radius:15px;
+        font-size:11px;
+        font-weight:600;
+    }
+    .erp-status.success{
+        background:#d5f5e3;
+        color:#27ae60;
+    }
+    .erp-status.warning{
+        background:#fcf3cf;
+        color:#f39c12;
+    }
+    .erp-status.danger{
+        background:#fadbd8;
+        color:#e74c3c;
+    }
+    .erp-toolbar-divider{
+        width:1px;
+        height:24px;
+        background:#DDD;
+        margin:0 5px;
+    }
+    .erp-toolbar-search{
+        display:flex;
+    }
+    .erp-toolbar-search input{
+        width:220px;
+    }
+    @media(max-width:900px)
+    {
+        .erp-toolbar-header,.erp-toolbar-body
+        {
+            flex-direction:column;
+            align-items:flex-start;
+        }
+        .erp-toolbar-right
+        {
+            margin-top:10px;
+            margin-left:0;
+        }
+    }
+    .erp-toolbar.compact .erp-btn{
+        height:28px;
+    }
+    .erp-toolbar.flat{
+        box-shadow:none;
+    }
+    .erp-toolbar.dark{
+        background:#2c3e50;
+    }

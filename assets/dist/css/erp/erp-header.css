@@ -1,0 +1,146 @@
+    /*           ERP HEADER */
+    .main-header
+    {
+        border:none;
+        box-shadow:0 2px 8px rgba(0,0,0,.10);
+    }
+    /* NAVBAR */
+    .main-header .navbar
+    {
+        height:54px;
+        min-height:54px;
+        background:#1565C0;
+        background:linear-gradient(90deg,#1565C0,#1976D2);
+        border:none;
+    }
+    /* LOGO */
+    .main-header .logo
+    {
+        height:54px;
+        line-height:54px;
+        background:#0D47A1;
+        color:#FFF;
+        font-size:18px;
+        font-weight:600;
+        letter-spacing:.5px;
+        border:none;
+        transition:.25s;
+    }
+    .main-header .logo:hover
+    {
+        background:#1565C0;
+    }
+    .main-header .logo span
+    {
+        font-size:11px;
+        display:block;
+        margin-top:-18px;
+        font-weight:400;
+        opacity:.8;
+    }
+    /* SIDEBAR BUTTON */
+    .sidebar-toggle
+    {
+        width:54px;
+        height:54px;
+        text-align:center;
+        transition:.2s;
+    }
+    .sidebar-toggle:hover
+    {
+        background:rgba(255,255,255,.12)!important;
+    }
+    .sidebar-toggle:before
+    {
+        font-size:18px;
+    }
+    /* NAVBAR MENU */
+    .navbar-custom-menu>ul>li>a
+    {
+        height:54px;
+        line-height:54px;
+        padding:0 18px;
+        color:#FFF;
+        transition:.20s;
+    }
+    .navbar-custom-menu>ul>li>a:hover
+    {
+        background:rgba(255,255,255,.12);
+    }
+    /* ICONOS */
+    .navbar-custom-menu .fa
+    {
+        font-size:15px;
+    }
+    /* USER IMAGE */
+    .navbar-nav>.user-menu>.dropdown-toggle>img
+    {
+        width:34px;
+        height:34px;
+        margin-top:-2px;
+        border-radius:50%;
+        border:2px solid rgba(255,255,255,.4);
+    }
+    /* USER MENU */
+    .navbar-nav>.user-menu>.dropdown-menu
+    {
+        border:none;
+        border-radius:8px;
+        overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,.15);
+    }
+    .navbar-nav>.user-menu>.dropdown-menu>.user-header
+    {
+        background:#1565C0;
+        color:#FFF;
+    }
+    .navbar-nav>.user-menu>.dropdown-menu>.user-header img
+    {
+        border-radius:50%;
+        border:3px solid rgba(255,255,255,.35);
+    }
+    /* DROPDOWN */
+    .dropdown-menu
+    {
+        border:none;
+        border-radius:8px;
+        box-shadow:0 8px 20px rgba(0,0,0,.10);
+    }
+    /* BADGES */
+    .label-warning
+    {
+        background:#FB8C00!important;
+    }
+    .label-success
+    {
+        background:#43A047!important;
+    }
+    .label-danger
+    {
+        background:#E53935!important;
+    }
+    /* HEADER SEARCH */
+    .navbar input
+    {
+        border-radius:20px;
+    }
+    /*  RESPONSIVE */
+    @media(max-width:768px)
+    {
+        .main-header .logo
+        {
+            width:180px;
+            font-size:16px;
+        }
+    }
+    .erp-module-title
+    {
+        font-size:14px;
+        font-weight:600;
+        color:#FFF!important;
+        cursor:default;
+    }
+    .erp-module-title:hover
+    {
+        background:none!important;
+    }

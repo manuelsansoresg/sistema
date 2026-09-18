@@ -1,0 +1,121 @@
+    /********************************************
+        PANEL
+    ********************************************/
+
+    .erp-panel{
+        display:flex;
+        flex-direction:column;
+        background:var(--erp-white);
+        border:1px solid var(--erp-border);
+        border-radius:var(--erp-radius-sm);
+        box-shadow:var(--erp-shadow-xs);
+        overflow:hidden;
+        margin-bottom:12px;
+    }
+    /********************************************
+        HEADER
+    ********************************************/
+    .erp-panel-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        height:40px;
+        padding:0 12px;
+        background:linear-gradient(#fafafa,#f2f4f7);
+        border-bottom:1px solid var(--erp-border);
+    }
+    /********************************************
+        TITLE
+    ********************************************/
+    .erp-panel-title{
+        display:flex;
+        align-items:center;
+        font-size:13px;
+        font-weight:600;
+        color:var(--erp-text);
+    }
+    .erp-panel-title i{
+        color:var(--erp-primary);
+        margin-right:8px;
+        font-size:15px;
+    }
+    /********************************************
+        TOOLS
+    ********************************************/
+    .erp-panel-tools{
+        display:flex;
+        align-items:center;
+        gap:4px;
+    }
+    .erp-panel-btn{
+        width:26px;
+        height:26px;
+        border:1px solid transparent;
+        background:transparent;
+        border-radius:4px;
+        cursor:pointer;
+        color:#777;
+        transition:.20s;
+    }
+    .erp-panel-btn:hover{
+        background:#FFF;
+        border-color:var(--erp-border);
+        color:var(--erp-primary);
+    }
+    .erp-panel-body{
+        padding:12px;
+        background:#FFF;
+    }
+    .erp-panel-footer{
+        padding:8px 12px;
+        border-top:1px solid var(--erp-border);
+        background:#fafafa;
+    }
+    .erp-panel.primary>.erp-panel-header{
+        background:linear-gradient(#2089c7,#1878b0);
+        color:white;
+    }
+    .erp-panel.primary .erp-panel-title{
+        color:white;
+    }
+    .erp-panel.primary .erp-panel-title i{
+        color:white;
+    }
+    .erp-panel.success>.erp-panel-header{
+        background:#27ae60;
+        color:white;
+    }
+    .erp-panel.warning>.erp-panel-header{
+        background:#f39c12;
+        color:white;
+    }
+    .erp-panel.danger>.erp-panel-header{
+        background:#e74c3c;
+        color:white;
+    }
+    .erp-panel.compact .erp-panel-body{
+        padding:8px;
+    }
+    .erp-panel.no-header>.erp-panel-header{
+        display:none;
+    }
+    .erp-panel.flat{
+        box-shadow:none;
+    }
+    .erp-panel:hover{
+        box-shadow:var(--erp-shadow-sm);
+    }
+    .erp-panel.loading{
+        position:relative;
+    }
+    .erp-panel.loading:after{
+        content:'';
+        position:absolute;
+        inset:0;
+        background:rgba(255,255,255,.65);
+    }
+    .erp-panel-status{
+        margin-left:12px;
+        color:#999;
+        font-size:11px;
+    }

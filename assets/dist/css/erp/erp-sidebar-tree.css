@@ -1,0 +1,111 @@
+    /* TREEVIEW */
+    .treeview-menu
+    {
+        display:none;
+        margin:4px 0 8px;
+        padding:0;
+        background:transparent;
+        border:none;
+    }
+    /* Cuando anda abierto*/
+    .treeview.active>.treeview-menu
+    {
+        display:block;
+    }
+    /* Espaciado*/
+    .treeview-menu>li
+    {
+        position:relative;
+        margin:2px 0;
+    }    
+    .treeview-menu>li>a
+    {
+        position:relative;
+        display:flex;
+        align-items:center;
+        padding:9px 16px 9px 48px;
+        color:#B8C7CE;
+        font-size:13px;
+        transition:all .20s ease;
+    }
+    /* Hover */
+    .treeview-menu>li>a:hover
+    {
+        background:#334155;
+        color:#FFF;
+        border-radius:6px;
+    }
+    /*Linea Vertical*/
+    .treeview-menu
+    {
+        position:relative;
+    }
+    .treeview-menu:before
+    {
+        content:"";
+        position:absolute;
+        left:24px;
+        top:0;
+        bottom:0;
+        width:1px;
+        background:rgba(255,255,255,.08);
+    }
+    /* Linea horinzontal*/
+    .treeview-menu>li:before
+    {
+        content:"";
+        position:absolute;
+        left:24px;
+        top:18px;
+        width:14px;
+        height:1px;
+        background:rgba(255,255,255,.08);
+    }
+    .treeview-menu>li:last-child:after
+    {
+        content:"";
+        position:absolute;
+        left:24px;
+        top:18px;
+        bottom:0;
+        width:2px;
+        background:var(--sidebar-bg);
+    }
+    /*icono*/
+    .treeview-menu>li>a>.fa
+    {
+        width:18px;
+        margin-right:8px;
+        text-align:center;
+        font-size:12px;
+    }
+    /* Flecha */
+    .treeview>a>.fa-angle-left
+    {
+        transition:.25s;
+    }
+    .treeview.active>a>.fa-angle-left
+    {
+        transform:rotate(-90deg);
+    }
+    .treeview-menu
+    {
+        overflow:hidden;
+    }
+    .treeview-menu .treeview-menu
+    {
+        margin-left:14px;
+    }
+    .treeview-menu .treeview-menu a
+    {
+        padding-left:64px;
+    }
+    .treeview-menu .label
+    {
+        margin-left:auto;
+        border-radius:20px;
+    }
+    .sidebar-collapse .treeview-menu
+    {
+        display:none !important;
+    }
