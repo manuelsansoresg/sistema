@@ -74,11 +74,10 @@
             $opcion = $_POST['qopcion'];
             $id = $_POST['qmarca'];
             
-            $clas = (int)($_POST['qclas'] ?? 0);
             $buscar = trim((string)($_POST['buscar'] ?? ''));
             $dataitem = $buscar === ''
-                ? VehiculoModel::AllTipo($id, $clas)
-                : VehiculoModel::TipoSearch($id, $clas, $buscar);
+                ? VehiculoModel::AllTipo($id)
+                : VehiculoModel::TipoSearch($id, $buscar);
             if ($opcion == 0) {
                 echo json_encode(['data' => $dataitem]);
             } else {

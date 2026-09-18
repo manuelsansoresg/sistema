@@ -17,22 +17,29 @@ class VehiculoModel extends DB
         return DB::query($sql);
     }
    
-    static function AllTipo($marca, $clasificacion)
+    static function AllTipo($idMarca)
     {
-        return self::TipoSearch($marca, $clasificacion, '');
+        $sql = "SELECT PKINTID_TIPO AS pkintid_tipo, VCHTIPO AS vchtipo,
+                       FKINTID_MARCA AS fkintid_marca
+                FROM TblTipo
+                WHERE FKINTID_MARCA = :marca
+                ORDER BY VCHTIPO";
+
+        return DB::query($sql, [':marca' => $idMarca]);
     }
 
-    static function TipoSearch($marca, $clasificacion, $buscar)
+    static function TipoSearch($idMarca, $palabra)
     {
-        $sql = "SELECT DISTINCT T.PKINTID_TIPO AS pkintid_tipo, T.VCHTIPO AS vchtipo
-                FROM TblTipo T
-                WHERE T.FKINTID_MARCA = :marca
-                  AND T.INTID_CLASVEHICULO = :clas
-                  AND T.VCHTIPO LIKE :buscar
-                ORDER BY T.VCHTIPO";
+        $sql = "SELECT PKINTID_TIPO AS pkintid_tipo, VCHTIPO AS vchtipo,
+                       FKINTID_MARCA AS fkintid_marca
+                FROM TblTipo
+                WHERE FKINTID_MARCA = :marca
+                  AND VCHTIPO LIKE :buscar
+                ORDER BY VCHTIPO
+                LIMIT 20";
 
-        return DB::query($sql, [':marca' => $marca, ':clas' => $clasificacion,
-            ':buscar' => '%' . $buscar . '%']);
+        return DB::query($sql, [':marca' => $idMarca,
+            ':buscar' => '%' . $palabra . '%']);
     }
 
     static function All($cvevehiculo)

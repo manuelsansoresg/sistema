@@ -614,11 +614,10 @@
         function transporteVehiculo(combo, params, success, failure) {
             const vigente = function() {
                 return combo === '#cbomarca'
-                    ? String(params.data.qclas) === String(idClase)
-                    : String(params.data.qmarca) === String(idMarca) &&
-                      String(params.data.qclas) === String(idClase);
+                    ? String(params.data.qclas) === String($('#cbovehiculo').val() || 0)
+                    : String(params.data.qmarca) === String($('#cbomarca').val() || 0);
             };
-            if (!vigente() || !idClase || (combo === '#cbotipo' && !idMarca)) {
+            if (!vigente() || (combo === '#cbomarca' ? !$('#cbovehiculo').val() : !$('#cbomarca').val())) {
                 success([]);
                 return { abort: function() {} };
             }
@@ -656,14 +655,15 @@
                     return {
                         buscar: params.term || '',
                         qopcion :1,
-                        qclas:idClase                   
+                        qclas:$('#cbovehiculo').val()
                     };
                 },
                 processResults: function (response) 
                 {
+                    console.log('GetAllMarca respuesta', response);
                     return { results:response };
                 },
-                cache: true
+                cache: false
             }
         });
         /* Tip de vehiculo */
@@ -689,20 +689,20 @@
                 dataType:'json',
                 delay:250,
                 data:function(params){
-
+                    console.log('Marca seleccionada:', $('#cbomarca').val());
                     return{
                         buscar: params.term || '',
                         qopcion:1,                    
-                        qmarca:idMarca, qclas:idClase
+                        qmarca:$('#cbomarca').val() || 0
                     };
                 },
                 processResults:function(response){
-
+                    console.log('Tipos recibidos:', response);
                     return{
                         results: response
                     };
                 },
-                cache:true
+                cache:false
             }
         });
         $('#cbooperador').on('change.erpDependencia', function(e)
