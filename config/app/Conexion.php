@@ -14,7 +14,7 @@
                 // echo "Se ha conectado a la dB";
 
             } catch (PDOException $e) {
-                echo "ERROR: " . $e->getMessage();
+                throw new RuntimeException('No se pudo conectar con la base de datos.', 0, $e);
             }
         }
 
@@ -233,10 +233,12 @@
                  self::handleDBError($e);
             }
         }
-        public static function transaction(callable $callback)
+        public static function transaction(callable $callback, ?PDO $pdo = null)
         {
-            $db = new self();
-            $pdo = $db->conect();
+            if ($pdo === null) {
+                $db = new self();
+                $pdo = $db->conect();
+            }
 
             try
             {

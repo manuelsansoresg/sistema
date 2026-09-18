@@ -16,8 +16,8 @@
     <link rel="stylesheet" href="<?= DIST ?>/css/font-awesome.min.css">   
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/ERPTheme.Kendo.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/ERPLookup.css">
-    <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/css/erp/erp.layout.css">
+    <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio.css">
     <!-- Ionicons -->
     <link rel="stylesheet" href="<?= DIST ?>/css/ionicons.min.css">
     <link rel="stylesheet" href="<?= PLUGINS ?>/select2/select2.css">
@@ -58,13 +58,15 @@
     {   $dciva = unserialize($m_Session->getCurrentIVA()); }
     if (array_key_exists('DCRET', $_SESSION)) 
     {   $dcret = unserialize($m_Session->getCurrentRETENCION()); }
+    if (isset($ivaConfigurado)) $dciva = (float)$ivaConfigurado;
+    if (isset($retencionConfigurada)) $dcret = (float)$retencionConfigurada;
 ?>
 
 </head>
 <body>    
     <input type="hidden" id="txtiduser" name="txtiduser" value="<?= $iduser?>">
     <input type="hidden" id="txtidemp" name="txtidemp" value="<?= $idemp?>">
-    <input type="hidden" id="txtidsuc" name="txtidsuc" value="25">
+    <input type="hidden" id="txtidsuc" name="txtidsuc" value="<?= htmlspecialchars((string)$idsuc, ENT_QUOTES, 'UTF-8')?>">
     <input type="hidden" id="txtidclisuc" name="txtidclisuc" value="">
     <input type="hidden" id="txtcitafecha_guardada" name="txtcitafecha_guardada" value="">
     <input type="hidden" id="txtcitahora_guardada" name="txtcitahora_guardada" value="">
@@ -91,6 +93,8 @@
                 <button type="button" class="erp-btn warning"> <i class="fa fa-print"></i> Imprimir</button>
             </div>          
         </div>
+        <p class="erp-required-help"><span aria-hidden="true">*</span> Campos obligatorios</p>
+        <div id="ordenErrores" class="erp-validation-summary" role="alert" tabindex="-1" hidden></div>
         <!-- Cuerpo -->
         <div class="erp-layout-body">
             <div class="erp-main">
@@ -103,16 +107,16 @@
                             </div>
                             <div class="erp-card-body">                                
                                 <div class="form-group">                                    
-                                    <label>TIPO DE VEHICULO</label>
-                                    <select class="select2 input-default" style="width:100%;" name="cbovehiculo" id="cbovehiculo"></select>
+                                    <label for="cbovehiculo">TIPO DE VEHICULO <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                    <select class="select2 input-default" style="width:100%;" name="cbovehiculo" id="cbovehiculo" aria-required="true"></select>
                                 </div>                               
                                 <div class="form-group">                                    
-                                    <label>MARCA</label>
-                                    <select class="cbomarca form-control" style="width:100%" name="cbomarca" id="cbomarca"></select>
+                                    <label for="cbomarca">MARCA <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                    <select class="cbomarca form-control" style="width:100%" name="cbomarca" id="cbomarca" aria-required="true"></select>
                                 </div>
                                 <div class="form-group">
-                                    <label>TIPO</label>
-                                    <select class="cbotipo form-control" style="width:100%" name="cbotipo" id="cbotipo"></select>
+                                    <label for="cbotipo">TIPO <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                    <select class="cbotipo form-control" style="width:100%" name="cbotipo" id="cbotipo" aria-required="true"></select>
                                 </div>                                
                                 <div class="erp-form-row">
                                     <div class="erp-form-label"><i class="fa fa-tint"></i>COLOR</div>
@@ -139,6 +143,10 @@
                                     </div>
 
                                 </div>                                
+                                <div class="erp-form-row">
+                                    <label class="erp-form-label" for="txtmotor"><i class="fa fa-cog"></i>MOTOR</label>
+                                    <div class="erp-form-control"><input type="text" class="form-control erp-input-sm text-uppercase" id="txtmotor" name="txtmotor" placeholder="MOTOR (opcional)"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -162,10 +170,10 @@
                                     </div>
                                 </div>
                                 <div class="erp-form-row">                                
-                                    <div class="erp-form-label"><i class="fa fa-map-pin"></i>CONTACTO</div>
+                                    <label class="erp-form-label" for="txtcontacto"><i class="fa fa-map-pin"></i>CONTACTO <span class="erp-required" aria-label="Obligatorio">*</span></label>
                                     <div class="erp-form-control">
                                         <div class="erp-input-group">
-                                            <input type="text" class="form-control erp-input-sm text-uppercase" id="txtcontacto" name="txtcontacto" placeholder="CONTACTO" disabled>
+                                            <input type="text" class="form-control erp-input-sm text-uppercase" id="txtcontacto" aria-required="true" name="txtcontacto" placeholder="CONTACTO" disabled>
                                             <input type="text" class="form-control erp-input-sm text-uppercase" id="txtetqcontact" name="txtetqcontact" placeholder="ZONA CONTACTO" disabled>                                            
                                             <button class="erp-input-btn" type="button" id="btncontacto" name="btncontacto" data-toggle="modal" data-target="#modal-mapacontacto" disabled>
                                             <i class="fa fa-search push-5-r"></i></button>
@@ -174,10 +182,10 @@
                                     </div>
                                 </div>
                                 <div class="erp-form-row">                                
-                                    <div class="erp-form-label"><i class="fa fa-map-pin"></i>TERMINO</div>
+                                    <label class="erp-form-label" for="txttermino"><i class="fa fa-map-pin"></i>TERMINO <span class="erp-required" aria-label="Obligatorio">*</span></label>
                                     <div class="erp-form-control">
                                         <div class="erp-input-group">
-                                            <input type="text" class="form-control erp-input-sm text-uppercase" id="txttermino" name="txttermino" PlaceHolder="TERMINO" disabled>
+                                            <input type="text" class="form-control erp-input-sm text-uppercase" id="txttermino" aria-required="true" name="txttermino" PlaceHolder="TERMINO" disabled>
                                             <input type="text" class="form-control erp-input-sm text-uppercase" id="txteqtermi" name="txteqtermi" PlaceHolder="ZONA TERMINO" disabled>                                            
                                             <button class="erp-input-btn" type="button" id="btntermino" name="btntermino" disabled><i class="fa fa-search push-5-r"></i></button>
                                         </div>
@@ -215,19 +223,19 @@
                                                 </div>
                                                 <!-- CLAVE -->
                                                 <div class="erp-field">
-                                                    <label>Clave</label>
-                                                    <select class="cbotipo form-control" name="cboclave" id="cboclave">
+                                                    <label for="cboclave">Clave <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                                    <select class="cbotipo form-control" name="cboclave" id="cboclave" aria-required="true">
                                                     </select>
                                                 </div>
                                                 <div class="erp-internal-row">
                                                     <!-- SERV -->
                                                     <div class="erp-field">
                                                         <label>Serv.</label>
-                                                        <input class="form-control" type="number" id="txtserv" name="txtserv" value="1" placeholder="1">
+                                                        <input class="form-control" type="number" id="txtserv" name="txtserv" readonly aria-label="Primer servicio de la nueva orden" value="1" placeholder="1">
                                                     </div>
                                                     <!-- TIPO SERVICIO -->
                                                     <div class="erp-field">
-                                                        <label>Tipo de servicio</label>
+                                                        <label>Local / Foráneo <span class="erp-required" aria-label="Obligatorio">*</span></label>
                                                         <div class="erp-radio-group">
                                                             <label class="erp-radio">
                                                                 <input type="radio" name="rndlocal" id="rndlocal" checked value="L">
@@ -251,21 +259,21 @@
                                                 </div>
                                                 <!-- OPERADOR -->
                                                 <div class="erp-field">
-                                                    <label>Operador</label>
-                                                    <select class="select2 input-default" style="width:100%;" name="cbooperador" id="cbooperador">
+                                                    <label for="cbooperador">Operador <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                                    <select class="select2 input-default" style="width:100%;" name="cbooperador" id="cbooperador" aria-required="true">
                                                     </select>
                                                 </div>
                                                 <div class="erp-internal-row">
                                                     <!-- GRUA -->
                                                     <div class="erp-field">
-                                                        <label>Grúa</label>
-                                                        <select class="select2 input-default" style="width:100%;" name="cbogrua" id="cbogrua">
+                                                        <label for="cbogrua">Grúa <span class="erp-required" aria-label="Obligatorio">*</span></label>
+                                                        <select class="select2 input-default" style="width:100%;" name="cbogrua" id="cbogrua" aria-required="true">
                                                         </select>
                                                     </div>
                                                     <!-- TIEMPO PROMESA -->
                                                     <div class="erp-field">
                                                         <label>Tiempo promesa</label>
-                                                        <input name="txtpromesa" id="txtpromesa" class="form-control" placeholder="Tiempo promesa">
+                                                        <input type="number" min="1" step="1" name="txtpromesa" id="txtpromesa" class="form-control" placeholder="Minutos (opcional)">
                                                     </div>
                                                 </div>
                                             </div>    
@@ -282,8 +290,12 @@
                             Datos del Servicio
                         </div>
                     <div class="erp-card-body">
+                        <div class="erp-radio-group erp-road-default" role="group" aria-label="Condición del servicio">
+                            <label class="erp-radio"><input type="radio" name="rndcamino" id="rndservsobre" value="S" checked><span class="erp-radio-mark"></span><span>Sobre Camino</span></label>
+                            <label class="erp-radio"><input type="radio" name="rndcamino" id="rndservfuera" value="F"><span class="erp-radio-mark"></span><span>Fuera del camino</span></label>
+                        </div>
                         <div class="form-group">
-                            <label>Servicio</label>
+                            <label for="cbotiposervicio">Medio de solicitud (opcional)</label>
                             <select class="select2 input-default" id="cbotiposervicio" name="cbotiposervicio"></select>
                         </div>
                                                        
@@ -321,6 +333,7 @@
                                 <td>IVA</td>
                                 <td class="text-right erp-summary-value" id="lbliva">$0.00</td>
                             </tr>                                
+                            <tr><td>Retención</td><td class="text-right erp-summary-value" id="lblretencion">$0.00</td></tr>
                         </table>
                         <div class="erp-total-final">
                             <span>TOTAL</span>
@@ -377,7 +390,6 @@
                         </div>
                         <div>
                             <strong>Detalle del servicio</strong>
-                            <small>Servicios y conceptos de la orden</small>
                         </div>
                     </div>
                     <div class="erp-grid-info">
@@ -385,8 +397,14 @@
                         ENTER / TAB para navegar
                     </div>
                 </div>
+                <div class="erp-grid-toolbar">
+                    <button type="button" id="btnagregar_row" class="erp-btn primary" disabled><i class="fa fa-plus"></i> Agregar concepto</button>
+                    <button type="button" id="btneliminar_row" class="erp-btn danger" disabled><i class="fa fa-trash"></i> Quitar fila</button>
+                </div>
                 <div class="erp-grid-body">
-                    <div id="grid"></div>  
+                    <div class="erp-grid-scroll">
+                        <div id="grid"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -564,6 +582,7 @@
             placeholder: 'Seleccione Operador',
             data: datosemp
         });
+        $('#cbooperador').val(null).trigger('change');
         $('#cboclave').select2({
             width: '100%',
             placeholder: 'Seleccione Clave',
@@ -577,12 +596,14 @@
         
         
         // Seleccionar el primero
-        $('#cbovehiculo').val(vehiculo[0].pkintid_clasvehiculo).trigger('change');    
-        $('#cboclave').val(claves[2].id).trigger('change');  
+        var automovil=datos.filter(function(x){return /autom[oó]vil/i.test(x.text);})[0] || datos[0];
+        if (automovil) { idClase=automovil.id; $('#cbovehiculo').val(idClase).trigger('change'); }
+        var claveGrua=datoscve.filter(function(x){return /servicio.*gr[uú]a/i.test(x.text);})[0];
+        if (claveGrua) $('#cboclave').val(claveGrua.id).trigger('change');
         
-        $('#cbovehiculo').on('select2:select', function(e)
+        $('#cbovehiculo').on('change.erpDependencia', function(e)
         {
-            idClase = e.params.data.id;
+            idClase = $(this).val() || 0;
             idMarca = 0;
 
             $('#cbomarca').val(null).trigger('change');
@@ -615,9 +636,9 @@
             }
         });
         /* Tip de vehiculo */
-        $('#cbomarca').on('select2:select', function(e)
+        $('#cbomarca').on('change.erpDependencia', function(e)
         {
-            idMarca = e.params.data.id;
+            idMarca = $(this).val() || 0;
             $('#cbotipo').val(null).trigger('change');
         });
 
@@ -634,7 +655,7 @@
                     return{
                         buscar: params.term || '',
                         qopcion:1,                    
-                        qmarca:idMarca
+                        qmarca:idMarca, qclas:idClase
                     };
                 },
                 processResults:function(response){
@@ -646,9 +667,9 @@
                 cache:true
             }
         });
-        $('#cbooperador').on('select2:select', function(e)
+        $('#cbooperador').on('change.erpDependencia', function(e)
         {
-            idoperador = e.params.data.id;        
+            idoperador = $(this).val() || 0;
             $('#cbogrua').val(null).trigger('change'); 
             Loadgrua(idoperador);
                    
@@ -656,6 +677,7 @@
         let m_gruas = [];
         function Loadgrua(idoperador)
         {
+           if (!idoperador) { $('#cbogrua').empty().trigger('change'); return; }
            $.ajax
                 ({ 
             
@@ -665,7 +687,8 @@
                 data:{  qopcion:1, qope:idoperador },                     
                 success:function(resp)
                 {
-                    m_gruas = resp;
+                    if (String(idoperador) !== String($('#cbooperador').val())) return;
+                    m_gruas = resp || [];
                     filtrargrua();
                 }
             });
@@ -674,7 +697,7 @@
         {
             $('#cbogrua').empty().select2({
                 width:'100%',
-                placeholder:'Seleccione marca',
+                placeholder:'Seleccione grúa',
                 data: m_gruas.map(function(item){
 
                     return{
@@ -683,7 +706,7 @@
                     };
 
                 })
-            });     
+            }).trigger('change');
         }
         
                
@@ -714,8 +737,10 @@
         frmServicios_DesactivarFormulario();
         /*Mostrar la fecha actual*/
                
-        function frmServicios_DesactivarFormulario()    
-        {        
+        function frmServicios_DesactivarFormulario()
+        {
+            if ($('#btngenerar').data('guardando')) return;
+            $('#grid').attr('inert','').attr('aria-disabled','true').addClass('erp-grid-disabled');
             $('#rndservsobre').prop('disabled', true); //adding property
             $('#rndservfuera').prop('disabled', true); //adding property
             $('#cbovehiculo').prop('disabled', true); //adding property
@@ -724,6 +749,7 @@
             $('#txtcolor').prop('disabled', true); //adding property
             $('#txtplaca').prop('disabled', true); //adding property
             $('#txtmodelo').prop('disabled', true); //adding property
+            $('#txtmotor').prop('disabled', true);
             $('#txtserie').prop('disabled', true); //adding property              
             $('#txtsolicita').prop('disabled', true); //adding property
             $('#txtasegurado').prop('disabled', true); //adding property
@@ -748,15 +774,21 @@
             $('#chkcitas').prop('disabled', true); //adding property
             $('#txtcomentarios').prop('disabled', true); //adding property
             $('#txtobservaciones').prop('disabled', true); //adding property
-            $('#txtubicacion').prop('disabled', true); //adding property
-            $('#btnagregar_row').prop('disabled', true); //adding property
+            $('#txtubicacion').prop('disabled', true);
+            $('#txtpromesa, #cbotiposervicio').prop('disabled',true); //adding property
+            $('#btnagregar_row, #btneliminar_row').prop('disabled', true); //adding property
             $('#txttotal').prop('disabled', true); //adding property
             $('#btngenerar').prop('disabled', true); //adding property
             $('#btncancelar').prop('disabled', true); //adding property
             $('#btnnuevo').prop('disabled', false); //adding property
         }
-        function frmServicios_ActivarFormulario()    
-        { 
+        function frmServicios_ActivarFormulario()
+        {
+            if ($('#btngenerar').data('guardando')) return;
+            $('#grid').removeAttr('inert').attr('aria-disabled','false').removeClass('erp-grid-disabled');
+            $('#ordenErrores').prop('hidden',true).empty();
+            $('.erp-invalid').removeClass('erp-invalid');
+            $('[aria-invalid]').removeAttr('aria-invalid');
             $('#rndservsobre').prop('disabled', false); //removing property
             $('#rndservfuera').prop('disabled', false); //removing property
             $('#cbovehiculo').prop('disabled', false); //removing property
@@ -765,6 +797,7 @@
             $('#txtcolor').prop('disabled', false); //removing property
             $('#txtplaca').prop('disabled', false); //removing property
             $('#txtmodelo').prop('disabled', false); //removing property
+            $('#txtmotor').prop('disabled', false);
             $('#txtserie').prop('disabled', false); //removing property             
             $('#txtsolicita').prop('disabled', false); //removing property
             $('#txtasegurado').prop('disabled', false); //removing property
@@ -789,8 +822,9 @@
             $('#chkcitas').prop('disabled', false); //removing property
             $('#txtcomentarios').prop('disabled', false); //removing property
             $('#txtobservaciones').prop('disabled', false); //removing property
-            $('#txtubicacion').prop('disabled', false); //removing property
-            $('#btnagregar_row').prop('disabled', false); //removing property
+            $('#txtubicacion').prop('disabled', false);
+            $('#txtpromesa, #cbotiposervicio').prop('disabled',false); //removing property
+            $('#btnagregar_row, #btneliminar_row').prop('disabled', false); //removing property
             $('#txttotal').prop('disabled', false); //removing property
             $('#btngenerar').prop('disabled', false); //removing property
             $('#btncancelar').prop('disabled', false); //removing property
@@ -808,7 +842,9 @@
     <!-- Llenado de KendoGrid -->
     <script type="text/javascript">
         /*Creo el datasource por default*/
-        var m_iva = $('#txtdciva').val();
+        var m_iva = Number($('#txtdciva').val());
+        var erpTasaIVA = m_iva <= 1 ? m_iva : m_iva / 100;
+        var erpTasaRetencion = Number(<?= json_encode($dcret) ?>);
         var detalle=new ERPGrid(
         {
 
@@ -834,6 +870,16 @@
             }
         });
         
+        // Override only this screen's calculation; shared ERPGrid remains untouched.
+        detalle.calculateRow=function(model) {
+            var subtotal=Math.round(Number(model.get('cantidad')) * Number(model.get('precio')) * 100) / 100;
+            var iva=Math.round(subtotal * erpTasaIVA * 100) / 100;
+            model.set('subtotal',subtotal); model.set('iva',iva);
+            var retencion=Math.round(subtotal * (model.get('retencionAplica') ? erpTasaRetencion : 0) * 100)/100;
+            model.set('retencion',retencion);
+            model.set('total',Math.round((subtotal+iva-retencion)*100)/100);
+            this.calculateTotals();
+        };
         var editorCliente=detalle.createComboEditor(
         {
             url:"<?=base_url ?>/Bitacoras/GetCliente_Suc_RFC",
@@ -854,8 +900,17 @@
                 options.model.set("idconcepto",null);
                 options.model.set("servicio","");                
                 options.model.set("precio",0);
+                options.model.set("retencionAplica",false);
+                options.model.set("precioBase",0);
                 options.model.set("idcargo",item.idcargo);
-                options.model.set("cargo",item.cargo);                
+                options.model.set("cargo",item.cargo);
+                var clienteId=item.id;
+                options.model.set('cargoRequerido',!!item.idcargo);
+                $.ajax({url:'<?=base_url?>/Bitacoras/GetTipoCargo',type:'POST',dataType:'json',data:{qcve:clienteId},success:function(cargos){
+                    if (String(options.model.get('idcliente')) === String(clienteId)) {
+                        options.model.set('cargoRequerido',!!(cargos && cargos.length));
+                    }
+                }});
             }
         });
         
@@ -887,6 +942,7 @@
                 /* Precio actual inicia con el precio del catálogo.*/
                 options.model.set("precio", precioCatalogo);
                 options.model.set("ac", item.ac == 1);
+                options.model.set("retencionAplica", item.ret == 1);
                 detalle.calculateRow(options.model);
                 enlazarResumenERPGrid();
                 window.setTimeout(actualizarResumenOrden, 0);
@@ -911,6 +967,28 @@
                 window.setTimeout(actualizarResumenOrden, 0);
             }
         });
+
+        // Typed text without a catalog selection must invalidate the previous lookup ID.
+        function validarEditorCatalogo(editor, campo, campoId, invalidar) {
+            return function(container,options) {
+                editor(container,options);
+                var combo=container.find('input[name="'+campo+'"]').data('kendoComboBox');
+                if (!combo) return;
+                combo.bind('change',function(){
+                    if (!this.dataItem()) {
+                        options.model.set(campoId,null);
+                        options.model.set(campo,this.text());
+                        if (invalidar) invalidar(options.model);
+                    }
+                });
+            };
+        }
+        editorCliente=validarEditorCatalogo(editorCliente,'cliente','idcliente',function(model){
+            model.set('idconcepto',null); model.set('servicio',''); model.set('idcargo',null); model.set('cargo','');
+            model.set('precio',0); model.set('precioBase',0); model.set('retencionAplica',false);
+        });
+        editorconceptos=validarEditorCatalogo(editorconceptos,'servicio','idconcepto');
+        editorcargo=validarEditorCatalogo(editorcargo,'cargo','idcargo');
 
         function editorCheck(container,options)
         {
@@ -1073,7 +1151,19 @@
             }
         ];
        
-        detalle.init();                      
+        detalle.init();
+        $('#btnagregar_row').on('click',function(){
+            if ($('#btngenerar').data('guardando')) return;
+            detalle.grid.closeCell(); detalle.addRow();
+        });
+        $('#btneliminar_row').on('click',function(){
+            if ($('#btngenerar').data('guardando')) return;
+            var row=detalle.grid.select().closest('tr');
+            var item=detalle.grid.dataItem(row);
+            if (!item) { Swal.fire({icon:'info',title:'Seleccione una fila del detalle'}); return; }
+            detalle.grid.closeCell(); detalle.ds.remove(item); actualizarResumenOrden();
+        });
+        $('#grid').attr('inert','').attr('aria-disabled','true').addClass('erp-grid-disabled');
         /* =========================================================
          * RESUMEN DE LA ORDEN
          * ========================================================= */
@@ -1097,26 +1187,28 @@
         {
             var subtotal = 0;
             var iva = 0;
-            var total = 0;
+            var total = 0, retencion = 0;
 
             if (!detalle || !detalle.ds)
             {
                 return;
             }
 
-            /* view() mantiene el comportamiento correcto si el DataSource tiene filtros. */
-            var data = typeof detalle.ds.view === "function" ? detalle.ds.view() : detalle.ds.data();
+            /* Totals include every captured row. */
+            var data = detalle.ds.data();
 
             $.each(data, function(index, item)
             {
                 subtotal += erpNumero(erpValorModelo(item, "subtotal"));
                 iva += erpNumero(erpValorModelo(item, "iva"));
                 total += erpNumero(erpValorModelo(item, "total"));
+                retencion += erpNumero(erpValorModelo(item,"retencion"));
             });
 
             $("#lblsubtotal").text(kendo.toString(subtotal, "c2"));
             $("#lbliva").text(kendo.toString(iva, "c2"));
             $("#lbltotal").text(kendo.toString(total, "c2"));
+            $("#lblretencion").text(kendo.toString(retencion,"c2"));
         }
 
         /* Cada cambio de fila vuelve a calcular el resumen. */
@@ -1279,10 +1371,16 @@
                     var idcliente=erpValorModelo(item,'idcliente');
                     var idconcepto=erpValorModelo(item,'idconcepto');
 
-                    /* No enviamos la fila inicial vacía. */
-                    if (!idcliente && !cliente && !idconcepto && !servicio) return;
+                    /* Omit only pristine placeholders; any partially captured row must be validated. */
+                    var capturada=idcliente || cliente || idconcepto || servicio ||
+                        erpValorModelo(item,'asistencia') || erpValorModelo(item,'expendiente') ||
+                        erpValorModelo(item,'idcargo') || erpValorModelo(item,'cargo') || erpValorModelo(item,'docto') ||
+                        erpValorModelo(item,'km') || erpValorModelo(item,'kmn') || erpValorModelo(item,'ac') ||
+                        Number(erpValorModelo(item,'cantidad')) !== 1 || Number(erpValorModelo(item,'precio')) !== 0;
+                    if (!capturada) return;
 
                     detalleOrden.push({
+                        fila:i,
                         idcliente:idcliente,
                         cliente:cliente,
                         idconcepto:idconcepto,
@@ -1291,13 +1389,16 @@
                         expendiente:erpValorModelo(item,'expendiente'),
                         kmn:erpNumero(erpValorModelo(item,'kmn')),
                         km:erpNumero(erpValorModelo(item,'km')),
-                        cantidad:erpNumero(erpValorModelo(item,'cantidad')),
-                        precio:erpNumero(erpValorModelo(item,'precio')),
+                        cantidad:erpValorModelo(item,'cantidad'),
+                        precio:erpValorModelo(item,'precio'),
+                        precioBase:erpValorModelo(item,'precioBase'),
+                        docto:erpValorModelo(item,'docto'),
                         iva:erpNumero(erpValorModelo(item,'iva')),
                         subtotal:erpNumero(erpValorModelo(item,'subtotal')),
                         total:erpNumero(erpValorModelo(item,'total')),
                         idcargo:erpValorModelo(item,'idcargo'),
                         cargo:erpValorModelo(item,'cargo'),
+                        cargoRequerido:!!erpValorModelo(item,'cargoRequerido'),
                         ac:!!erpValorModelo(item,'ac')
                     });
                 });
@@ -1321,7 +1422,8 @@
                         color:$('#txtcolor').val(),
                         placa:$('#txtplaca').val(),
                         modelo:$('#txtmodelo').val(),
-                        serie:$('#txtserie').val()                        
+                        serie:$('#txtserie').val(),
+                        motor:$('#txtmotor').val() || ''
                     },
                     servicio:{
                         solicita:$('#txtsolicita').val(),
@@ -1330,7 +1432,6 @@
                         etiqcont:$('#txtetqcontact').val(),
                         termino:$('#txttermino').val(),
                         etiqterm:$('#txteqtermi').val(), 
-                        termino:$('#txttermino').val(),
                         telefono:$('#txttel1').val(),
                         celular:$('#txtcel').val(),
                         clave:$('#cboclave').val(),
@@ -1338,6 +1439,7 @@
                         operador:$('#cbooperador').val(),
                         grua:$('#cbogrua').val(),
                         promesa:$('#txtpromesa').val(),
+                        camino:$('input[name="rndcamino"]:checked').val(),
                         tipoServicio:$('#cbotiposervicio').val(),
                         fecha:$('#txtfecha').val()
                     },
@@ -1364,33 +1466,87 @@
                 };
             },
 
-            validar:function()
+            validar:function(cerrarEditor)
             {
-                var errores=[];
-                var orden=this.get();
-
-                if (!orden.vehiculo.tipo) errores.push('Seleccione el tipo de vehículo.');
-                if (!orden.servicio.operador) errores.push('Seleccione el operador.');
-                if (!orden.ubicaciones.contacto.direccion) errores.push('Seleccione la ubicación de contacto.');
-                if (!orden.ubicaciones.termino.direccion) errores.push('Seleccione la ubicación de término.');
-                if (!orden.detalle.length) errores.push('Agregue al menos un concepto al detalle del servicio.');
-
-                if (orden.opciones.citas)
-                {
-                    if (!orden.cita || !orden.cita.fecha || !orden.cita.hora)
-                        errores.push('Complete la fecha y hora de la cita.');
+                var grid=$('#grid').data('kendoGrid');
+                if (cerrarEditor !== false && grid) {
+                    // Kendo 2015 closeCell destroys the editor without committing a pending change.
+                    grid.wrapper.find('.k-edit-cell input, .k-edit-cell select, .k-edit-cell textarea').trigger('change');
+                    if (grid.editable && typeof grid.editable.end === 'function') grid.editable.end();
+                    if (typeof grid.closeCell === 'function') grid.closeCell();
                 }
-
-                return {ok:errores.length===0, errores:errores, orden:orden};
+                var errores=[], campos=[];
+                var orden=this.get();
+                $('.erp-invalid').removeClass('erp-invalid');
+                $('[aria-invalid]').removeAttr('aria-invalid');
+                function error(selector,mensaje) {
+                    errores.push(mensaje); campos.push(selector);
+                    var $campo=$(selector).attr('aria-invalid','true').addClass('erp-invalid');
+                    $campo.next('.select2-container').addClass('erp-invalid');
+                }
+                function requerido(valor,selector,mensaje) {
+                    if (!valor || !String(valor).trim()) error(selector,mensaje);
+                }
+                requerido(orden.vehiculo.tipo,'#cbovehiculo','Seleccione el tipo de vehículo.');
+                requerido(orden.vehiculo.marca,'#cbomarca','Seleccione la marca.');
+                requerido(orden.vehiculo.clase,'#cbotipo','Seleccione el tipo del catálogo.');
+                requerido(orden.servicio.clave,'#cboclave','Seleccione la clave del servicio.');
+                requerido(orden.servicio.contacto,'#txtcontacto','Complete el lugar de contacto.');
+                requerido(orden.servicio.termino,'#txttermino','Complete el lugar de entrega.');
+                if (orden.opciones.local === orden.opciones.foraneo) error('#rndlocal','Seleccione Local o Foráneo.');
+                requerido(orden.servicio.operador,'#cbooperador','Seleccione el operador.');
+                requerido(orden.servicio.grua,'#cbogrua','Seleccione la grúa.');
+                if (orden.servicio.promesa && (!/^\d+$/.test(orden.servicio.promesa) || Number(orden.servicio.promesa) <= 0)) error('#txtpromesa','Ingrese el tiempo promesa en minutos enteros mayores a cero.');
+                if (!orden.detalle.length) error('#grid','Agregue al menos un concepto.');
+                orden.detalle.forEach(function(item) {
+                    var fila='#grid tbody tr:eq('+item.fila+')';
+                    var prefijo='Fila '+(item.fila+1)+': ';
+                    function celda(campo,mensaje) {
+                        var indice=grid ? grid.columns.map(function(x){return x.field;}).indexOf(campo) : -1;
+                        error(indice >= 0 ? fila+' td:eq('+indice+')' : '#grid',prefijo+mensaje);
+                    }
+                    if (!item.idcliente || Number(item.idcliente) <= 0) celda('cliente','seleccione cliente.');
+                    if (!item.idconcepto || Number(item.idconcepto) <= 0) celda('servicio','seleccione concepto/tarifa.');
+                    if (item.cantidad === null || item.cantidad === '' || !isFinite(Number(item.cantidad)) || Number(item.cantidad) <= 0) celda('cantidad','la cantidad debe ser mayor a cero.');
+                    if (item.precio === null || item.precio === '' || !isFinite(Number(item.precio)) || Number(item.precio) < 0 || Number(item.precio) < Number(item.precioBase || 0)) celda('precio','ingrese un precio válido, al menos el precio de tarifa.');
+                    // Configured cargos are checked authoritatively in PHP as well.
+                    if (!item.idcargo || Number(item.idcargo) <= 0) celda('cargo','seleccione tipo de cargo.');
+                });
+                if (orden.opciones.citas) {
+                    var cita=orden.cita;
+                    if (!cita || !/^\d{4}-\d{2}-\d{2}$/.test(cita.fecha || '') || !/^([01]\d|2[0-3]):[0-5]\d$/.test(cita.hora || '') || !isFinite(cita.duracion) || cita.duracion <= 0)
+                        error('#chkcitas','Complete una fecha, hora y duración válidas para la cita.');
+                }
+                $('#ordenErrores').prop('hidden',errores.length===0).text(errores.join(' '));
+                return {ok:errores.length===0, errores:errores, campos:campos, orden:orden};
             }
+
         };
 
-        /* Generar queda preparado para conectar posteriormente con PHP.
-         * Por ahora valida y muestra el objeto final sin realizar INSERT. */
+        function enfocarError(selector) {
+            var $campo=$(selector);
+            if (!$campo.length) $campo=$('#ordenErrores');
+            $campo[0].scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+            if ($campo.is('select') && $campo.data('select2')) $campo.select2('open');
+            else if ($campo.is('td')) {
+                var grid=$('#grid').data('kendoGrid');
+                if (grid) grid.editCell($campo);
+            } else $campo.attr('tabindex',$campo.attr('tabindex') || '0').trigger('focus');
+        }
+        $(document).on('input.erpValidacion change.erpValidacion','[aria-required], #rndlocal, #rndforaneo, #chkcitas, #txtpromesa',function(){
+            if ($('#ordenErrores').is(':visible')) ERPOrden.validar(false);
+        });
+        detalle.ds.bind('change',function(e){
+            if (e.action === 'itemchange' && $('#ordenErrores').is(':visible')) {
+                window.clearTimeout(window.erpValidacionTimer);
+                window.erpValidacionTimer=window.setTimeout(function(){ERPOrden.validar(false);},0);
+            }
+        });
+        // Validate, send JSON, and deactivate only after a confirmed successful response.
         $('#btngenerar').off('click.erpOrden').on('click.erpOrden', function(e)
         {
             e.preventDefault();
-
+            if ($(this).data('guardando')) return;
             var resultado=ERPOrden.validar();
 
             if (!resultado.ok)
@@ -1399,15 +1555,13 @@
                     icon:'warning',
                     title:'Orden incompleta',
                     html:'<div style="text-align:left">' + resultado.errores.map(function(x){return '• '+x;}).join('<br>') + '</div>'
-                });
+                }).then(function(){enfocarError(resultado.campos[0]);});
                 return;
             }
 
-            console.log('ERPOrden V3.3', resultado.orden);
-
             var $btn=$(this);
             var guardadoOk=false;
-            $btn.prop('disabled',true).addClass('is-loading');
+            $btn.data('guardando',true).prop('disabled',true).addClass('is-loading');
 
             $.ajax({
                 url:'<?=base_url?>/Bitacoras/GuardarOrden',
@@ -1447,7 +1601,7 @@
                 complete:function()
                 {
                     if (!guardadoOk) $btn.prop('disabled',false);
-                    $btn.removeClass('is-loading');
+                    $btn.data('guardando',false).removeClass('is-loading');
                 }
             });
         });

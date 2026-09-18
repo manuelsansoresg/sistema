@@ -12,18 +12,24 @@
     require_once ROOT . '/config/app/funciones.php';
        
     class Bitacoras extends Controller
-    {  
+    {
+        private $modelo;
         public function __construct()
         {
+            $this->modelo = new BitacorasModel();
         }
         public function NuevoServicio()
-        {             
-            views::getView($this, "NewBitacora", [
+        {
+            $fiscal = DB::First('SELECT dciva, dcretencion FROM tblsucursal WHERE pkintid_sucursal = :sucursal',
+                [':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
+            $this->getView($this, "NewBitacora", [
                 'page_name'      => "Bitacoras",
                 'function_js'    => "Bitacora.js",
                 'tipclasif'      => json_encode(VehiculoModel::GetClasificacionesBase()),
                 'Empleado'       => json_encode($this->GetAllEmpleado()),
-                'Claves'         => json_encode($this->AllClave())
+                'Claves'         => json_encode($this->AllClave()),
+                'ivaConfigurado' => $fiscal['dciva'] ?? null,
+                'retencionConfigurada' => $fiscal['dcretencion'] ?? null
             ]);
         }               
         /*Marcas*/    
@@ -68,33 +74,21 @@
             $opcion = $_POST['qopcion'];
             $id = $_POST['qmarca'];
             
-            if($opcion==0)
-            {
-                echo "{\"data\":" .json_encode(VehiculoModel::AllTipo($id)). "}";
-            }
-            else
-            {
-                if(!isset($_POST['buscar']))
-                {
-                    $dataitem = VehiculoModel::AllTipo($id);
-                    $data = array();
-                
-                    foreach ($dataitem as $row)
-                    {   $data[] = array('id' => $row["pkintid_tipo"],'text' =>$row["vchtipo"]); }
-                }
-                else
-                {
-                    $dataitem = VehiculoModel::TipoSearch($id,$_POST['buscar']);
-                    $data = array();
-                
-                    foreach ($dataitem as $row)
-                    {   $data[] = array('id' => $row["pkintid_tipo"],'text' =>$row["vchtipo"]); } 
-                }
-                
+            $sucursal = BitacorasModel::valorSesion('cveSucursal');
+            $clas = (int)($_POST['qclas'] ?? 0);
+            $buscar = trim((string)($_POST['buscar'] ?? ''));
+            $dataitem = DB::query("SELECT pkintid_tipo, vchtipo FROM TblTipo
+                WHERE fkintid_sucursal = :sucursal AND fkintid_marca = :marca
+                AND intid_clasvehiculo = :clas AND vchtipo LIKE :buscar ORDER BY vchtipo",
+                [':sucursal' => $sucursal, ':marca' => $id, ':clas' => $clas, ':buscar' => '%' . $buscar . '%']);
+            if ($opcion == 0) {
+                echo json_encode(['data' => $dataitem]);
+            } else {
+                $data = [];
+                foreach ($dataitem as $row) $data[] = ['id' => $row['pkintid_tipo'], 'text' => $row['vchtipo']];
                 echo json_encode($data);
             }
-                        
-        } 
+        }
         /*Gruas del operador*/             
         public function GetAllGrua()
         {            
@@ -103,7 +97,11 @@
             $opcion = $_POST['qopcion'];
             $id = $_POST['qope'];
 
-            $datos = GruaChoferModel::GetGruaxEmpleado($id);
+            $data = [];
+            $datos = DB::query("SELECT u.pkintid_grua, u.vchnombre_grua
+                FROM tblgruaxchofer g INNER JOIN tblunidades u ON u.pkintid_grua = g.fkintid_grua
+                WHERE g.fkintid_empleado = :operador AND u.bitservicio_asig = 0 ORDER BY g.tiporelacion",
+                [':operador' => $id]);
             
             foreach($datos as $item)
             {
@@ -117,7 +115,7 @@
         {
             header("Content-type: application/json");
             
-            $qsuc   = empty($_POST['qsuc']) ? 0 : $_POST['qsuc'] ;
+            $qsuc = BitacorasModel::valorSesion('cveSucursal');
             $qtodos = empty($_POST['qtodos']) ? false : $_POST['qtodos'];
             $data = array();
             
@@ -161,7 +159,14 @@
             $qLF = empty($_POST['qlf']) ? false : $_POST['qlf']; /*Tipo de Servicio*/
             $data = array();
            
-            $datos = ClienteModel::TarifaConceptos($qcve);
+            $datos = DB::query("SELECT t.pkintid_tarifa AS PKINTID_TARIFA, t.vchleyenda AS VCHLEYENDA,
+                t.mnprecio_unitario AS MNPRECIO_UNITARIO, (t.bitactivo + 0) AS BITACTIVO,
+                t.vchtipo_servicio AS VCHTIPO_SERVICIO, (s.bitcomision + 0) AS bitcomision,
+                (s.bitretencion + 0) AS bitretencion
+                FROM tbltarifas t INNER JOIN tblservicios s ON s.pkintid_servicio = t.fkintid_servicio
+                INNER JOIN tblclientes_sucursal cs ON cs.pkintid_cliente_sucursal = t.fkintid_cliente_sucursal
+                WHERE t.fkintid_cliente_sucursal = :cliente AND cs.fkintid_sucursal = :sucursal AND s.bitactivo = 1",
+                [':cliente' => $qcve, ':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
             //'on'
             //MNPRECIO_UNITARIO
             foreach ($datos as $row)
@@ -179,7 +184,12 @@
             header("Content-type: application/json");
                       
             $qcve = empty($_POST['qcve']) ? false : $_POST['qcve'];             
-            $datos = NegocioModel::GetTipoCargoporCliente($qcve);
+            $datos = DB::query("SELECT TC.PKINTID_TIPOCARGO, TC.VCHDESCRIPCION
+                FROM TblTipoCargo TC
+                INNER JOIN TblTipoCargoClienteSucursal TCS ON TC.PKINTID_TIPOCARGO = TCS.FKINTID_TIPOCARGO
+                INNER JOIN TblClientes_Sucursal CS ON CS.PKINTID_CLIENTE_SUCURSAL = TCS.FKINTID_CLIENTE_SUCURSAL
+                WHERE CS.PKINTID_CLIENTE_SUCURSAL = :cliente AND CS.FKINTID_SUCURSAL = :sucursal AND TC.BITACTIVO = 1",
+                [':cliente' => $qcve, ':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
             
             $data = array();                
             
@@ -194,11 +204,14 @@
         /*empleados*/
         function GetAllEmpleado()
         {   
-            $Empleados = EmpleadoModel::GetAll();
+            $data = [];
+            $Empleados = DB::query("SELECT pkintid_empleado, CONCAT(vchnombre, ' ', vchapellidos) AS nombre_completo,
+                fkintid_puesto, (bitestatus + 0) AS bitestatus, (bitdisponible + 0) AS bitdisponible,
+                (bitcomodin + 0) AS bitcomodin FROM tblempleados ORDER BY pkintid_empleado");
 
             foreach ($Empleados as $item)
             {
-                if ($item['fkintid_puesto'] == 5 && $item['bitestatus'] == true && $item['bitdisponible'] == true || $item['bitcomodin'] == true){
+                if ($item['bitestatus'] == true && $item['bitdisponible'] == true && ($item['fkintid_puesto'] == 5 || $item['bitcomodin'] == true)){
                     $data[] = array('id' => $item["pkintid_empleado"],'text' =>$item["nombre_completo"]); 
                 }
             }                        
@@ -207,10 +220,12 @@
         /*Clave*/
         function AllClave()
         {   
+            $data = [];
             $oClaves = ParametroCfdiModel::GetAllClavesServicio();
 
             foreach ($oClaves as $item)
             {
+                if (!(int)$item['bitactivo']) continue;
                 if ($item['pkintid_clave'] == 3){
                     $data[] = array('id' => $item["pkintid_clave"],'text' =>$item["vchdescripcion"]); 
                 }
@@ -226,58 +241,29 @@
         }        
         public function GuardarOrden()
         {
+            // Keep PHP diagnostics out of the JSON response; errors are logged below.
+            ini_set('display_errors', '0');
             header('Content-Type: application/json; charset=utf-8');
-            try
-            {
-                /* RECIBIR JSON */
-                $json = file_get_contents('php://input');
-
-                if (!$json)
-                {
-                    throw new Exception('No se recibió información de la orden.');
+            try {
+                if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                    throw new InvalidArgumentException('Utilice POST para generar la orden.');
                 }
-
-                $orden = json_decode($json, true);
-
-                if (!is_array($orden))
-                {
-                    throw new Exception('La información recibida no tiene un formato válido.');
+                $orden = json_decode(file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
+                if (!is_array($orden)) {
+                    throw new InvalidArgumentException('La información de la orden no tiene un formato válido.');
                 }
-                /* VALIDACIONES BÁSICAS */
-                if (empty($orden['vehiculo']))
-                {
-                    throw new Exception('No se recibió la información del vehículo.');
-                }
-                if (empty($orden['servicio']))
-                {
-                    throw new Exception('No se recibió la información del servicio.');
-                }
-                if (empty($orden['detalle']) || !is_array($orden['detalle']))
-                {
-                    throw new Exception('La orden debe contener al menos un concepto.');
-                }
-                /* GUARDAR */
-                $resultado = $this->modelo->GuardarOrden($orden);
-
-                if (!$resultado || empty($resultado['status']))
-                {
-                    throw new Exception(!empty($resultado['message'])? $resultado['message']: 'No fue posible guardar la orden.');
-                }
-                /*  RESPUESTA */
-                echo json_encode(Response::success('Orden generada correctamente.',[
-                               'folio'       => isset($resultado['folio'])? $resultado['folio'] : '',
-                               'pkvchid_bis' => isset($resultado['pkvchid_bis'])? $resultado['pkvchid_bis']: '',
-                               'intno_serv'  => isset($resultado['intno_serv']) ? $resultado['intno_serv']: 1 
-                        ]
-                    )
-                );
-            }
-            catch (Exception $e)
-            {
-                http_response_code(400);
-                echo json_encode(Response::error($e->getMessage()));
+                $data = $this->modelo->GuardarOrden($orden);
+                echo json_encode(['status' => true, 'message' => 'Orden generada correctamente',
+                    'data' => $data], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            } catch (Throwable $e) {
+                error_log('GuardarOrden: ' . $e->getMessage());
+                http_response_code($e instanceof InvalidArgumentException || $e instanceof JsonException ? 400 : 500);
+                $message = $e instanceof JsonException ? 'El JSON recibido no es válido.' :
+                    ($e instanceof PDOException ? 'No fue posible guardar la orden. Ningún cambio fue registrado.' :
+                    ($e instanceof RuntimeException || $e instanceof InvalidArgumentException ? $e->getMessage() :
+                    'No fue posible procesar la orden. Ningún cambio fue registrado.'));
+                echo json_encode(['status' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
             }
             exit;
-        }                
+        }
     }
-?>
