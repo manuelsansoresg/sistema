@@ -17,34 +17,29 @@ class VehiculoModel extends DB
         return DB::query($sql);
     }
    
-    static function AllTipo($cvetipo)
+    static function AllTipo($marca, $clasificacion)
     {
-        $suc = unserialize($_SESSION['cveSucursal']);
-
-        $sql = " SELECT t.pkintid_tipo,t.fkintid_sucursal,t.vchtipo,t.fkintid_marca,t.intid_clasvehiculo,cv.VCHCONCEPTO
-                From TblTipo t
-                Inner join TblClas_Vehiculo cv on t.INTID_CLASVEHICULO = cv.PKINTID_CLASVEHICULO
-                Where t.FKINTID_SUCURSAL = :suc and t.FKINTID_MARCA = :cvem ";
-
-        return DB::query($sql, [':suc' => $suc, ':cvem' => $cvetipo]);
+        return self::TipoSearch($marca, $clasificacion, '');
     }
-    static function TipoSearch($cve, $palabra)
+
+    static function TipoSearch($marca, $clasificacion, $buscar)
     {
-        $suc = unserialize($_SESSION['cveSucursal']);
+        $sql = "SELECT DISTINCT T.PKINTID_TIPO AS pkintid_tipo, T.VCHTIPO AS vchtipo
+                FROM TblTipo T
+                WHERE T.FKINTID_MARCA = :marca
+                  AND T.INTID_CLASVEHICULO = :clas
+                  AND T.VCHTIPO LIKE :buscar
+                ORDER BY T.VCHTIPO";
 
-        $sql = " SELECT t.pkintid_tipo,t.fkintid_sucursal,t.vchtipo,t.fkintid_marca,t.intid_clasvehiculo,cv.VCHCONCEPTO
-                FROM TblTipo t 
-                INNER JOIN TblClas_Vehiculo cv on t.INTID_CLASVEHICULO = CV.PKINTID_CLASVEHICULO
-                WHERE t.FKINTID_SUCURSAL = :suc AND t.FKINTID_MARCA = :cvem AND t.VCHTIPO LIKE :palabra LIMIT 20";
+        return DB::query($sql, [':marca' => $marca, ':clas' => $clasificacion,
+            ':buscar' => '%' . $buscar . '%']);
+    }
 
-        return DB::query($sql, [':suc' => $suc, ':cvem' => $cve, ':palabra' => "%{$palabra}%"]);
-    }        
     static function All($cvevehiculo)
     {
         $sql = " SELECT DISTINCT(M.PKINTID_MARCA) ID, M.VCHMARCA, M.BITESTATUS
                 FROM TblMarca M INNER JOIN 
-                    TblTipo T ON T.FKINTID_MARCA = M.PKINTID_MARCA INNER JOIN
-                    TblClas_Vehiculo CV ON CV.PKINTID_CLASVEHICULO = T.INTID_CLASVEHICULO
+                    TblTipo T ON T.FKINTID_MARCA = M.PKINTID_MARCA
                     WHERE T.INTID_CLASVEHICULO = :clas AND M.BITESTATUS = 1 ORDER BY M.VCHMARCA";
 
         return DB::query($sql, [':clas' => $cvevehiculo]);
@@ -54,7 +49,6 @@ class VehiculoModel extends DB
         $sql = " SELECT DISTINCT(M.PKINTID_MARCA) ID, M.VCHMARCA, M.BITESTATUS
                 FROM TblMarca M 
                   INNER JOIN TblTipo T ON T.FKINTID_MARCA = M.PKINTID_MARCA 
-                  INNER JOIN TblClas_Vehiculo CV ON CV.PKINTID_CLASVEHICULO = T.INTID_CLASVEHICULO
                 WHERE T.INTID_CLASVEHICULO = :cve
                   AND M.VCHMARCA LIKE :palabra AND M.BITESTATUS = 1 ORDER BY M.VCHMARCA LIMIT 20";
 

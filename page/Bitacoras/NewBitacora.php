@@ -615,9 +615,10 @@
             const vigente = function() {
                 return combo === '#cbomarca'
                     ? String(params.data.qclas) === String(idClase)
-                    : String(params.data.qmarca) === String(idMarca);
+                    : String(params.data.qmarca) === String(idMarca) &&
+                      String(params.data.qclas) === String(idClase);
             };
-            if (!vigente() || (combo === '#cbomarca' ? !idClase : !idMarca)) {
+            if (!vigente() || !idClase || (combo === '#cbotipo' && !idMarca)) {
                 success([]);
                 return { abort: function() {} };
             }
@@ -627,9 +628,6 @@
             });
             request.fail(function(xhr, status, error) {
                 if (status === 'abort' || !vigente()) return;
-                console.error('Error al cargar ' + (combo === '#cbomarca' ? 'Marca' : 'Tipo'), {
-                    status: xhr.status, error: error, response: xhr.responseText
-                });
                 $(combo).empty().trigger('change');
                 failure(xhr, status, error);
             });
@@ -644,6 +642,10 @@
             ajax:
             {
                 url:'<?=base_url?>/Bitacoras/GetAllMarca',
+                error:function(xhr, status, error) {
+                    if (status === 'abort') return;
+                    console.error('Error catálogo vehículo:', status, error, xhr.responseText);
+                },
                 transport:function(params, success, failure) {
                     return transporteVehiculo('#cbomarca', params, success, failure);
                 },
@@ -676,6 +678,10 @@
             placeholder:'Seleccione tipo',
             ajax:{
                 url:'<?=base_url?>/Bitacoras/GetAllTipo',
+                error:function(xhr, status, error) {
+                    if (status === 'abort') return;
+                    console.error('Error catálogo vehículo:', status, error, xhr.responseText);
+                },
                 transport:function(params, success, failure) {
                     return transporteVehiculo('#cbotipo', params, success, failure);
                 },
@@ -687,7 +693,7 @@
                     return{
                         buscar: params.term || '',
                         qopcion:1,                    
-                        qmarca:idMarca
+                        qmarca:idMarca, qclas:idClase
                     };
                 },
                 processResults:function(response){
