@@ -75,12 +75,11 @@
             $id = $_POST['qmarca'];
             
             $sucursal = BitacorasModel::valorSesion('cveSucursal');
-            $clas = (int)($_POST['qclas'] ?? 0);
             $buscar = trim((string)($_POST['buscar'] ?? ''));
             $dataitem = DB::query("SELECT pkintid_tipo, vchtipo FROM TblTipo
                 WHERE fkintid_sucursal = :sucursal AND fkintid_marca = :marca
-                AND intid_clasvehiculo = :clas AND vchtipo LIKE :buscar ORDER BY vchtipo",
-                [':sucursal' => $sucursal, ':marca' => $id, ':clas' => $clas, ':buscar' => '%' . $buscar . '%']);
+                AND vchtipo LIKE :buscar ORDER BY vchtipo",
+                [':sucursal' => $sucursal, ':marca' => $id, ':buscar' => '%' . $buscar . '%']);
             if ($opcion == 0) {
                 echo json_encode(['data' => $dataitem]);
             } else {

@@ -613,10 +613,11 @@
         // Ignorar respuestas de una clasificación o marca que ya cambió.
         function transporteVehiculo(combo, params, success, failure) {
             const vigente = function() {
-                return String(params.data.qclas) === String(idClase) &&
-                    (combo === '#cbomarca' || String(params.data.qmarca) === String(idMarca));
+                return combo === '#cbomarca'
+                    ? String(params.data.qclas) === String(idClase)
+                    : String(params.data.qmarca) === String(idMarca);
             };
-            if (!vigente() || !idClase || (combo === '#cbotipo' && !idMarca)) {
+            if (!vigente() || (combo === '#cbomarca' ? !idClase : !idMarca)) {
                 success([]);
                 return { abort: function() {} };
             }
@@ -686,7 +687,7 @@
                     return{
                         buscar: params.term || '',
                         qopcion:1,                    
-                        qmarca:idMarca, qclas:idClase
+                        qmarca:idMarca
                     };
                 },
                 processResults:function(response){
