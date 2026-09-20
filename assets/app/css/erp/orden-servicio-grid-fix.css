@@ -1,0 +1,128 @@
+/* ==========================================================================
+   ORDEN DE SERVICIO - AJUSTE DE USABILIDAD DEL GRID
+   Cargar DESPUÉS de orden-servicio.css
+   No modifica lógica, Kendo, endpoints ni estructura HTML.
+   ========================================================================== */
+
+/* Da espacio vertical al área de datos cuando solo existe una fila.
+   Así el scrollbar horizontal no queda pegado al editor. */
+.erp-grid-body .k-grid-content,
+#grid .k-grid-content {
+    min-height: 84px;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/* Filas un poco más cómodas sin volver pesado el grid. */
+.erp-grid-body .k-grid-content tr {
+    min-height: 40px;
+}
+
+.erp-grid-body .k-grid-content td,
+#grid .k-grid-content td {
+    height: 40px !important;
+    min-height: 40px;
+    padding: 5px 8px !important;
+    font-size: 12px;
+    vertical-align: middle !important;
+}
+
+/* Celda activa: más aire alrededor del editor. */
+.erp-grid-body .k-grid-content td.k-edit-cell,
+#grid .k-grid-content td.k-edit-cell {
+    height: 42px !important;
+    min-height: 42px;
+    padding: 4px 6px !important;
+    background: #fff;
+}
+
+/* ComboBox de Cliente / Servicio dentro de la celda. */
+.erp-grid-body .k-edit-cell .k-combobox,
+#grid .k-edit-cell .k-combobox {
+    width: 100% !important;
+    min-height: 34px !important;
+}
+
+/* Sobrescribe las reglas antiguas de 25/27px únicamente mientras se edita. */
+.erp-grid-body .k-edit-cell .k-combobox .k-dropdown-wrap,
+#grid .k-edit-cell .k-combobox .k-dropdown-wrap {
+    height: 34px !important;
+    min-height: 34px !important;
+    border: 1px solid #98a2b3 !important;
+    border-radius: 5px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* Campo donde el usuario escribe la búsqueda. */
+.erp-grid-body .k-edit-cell .k-combobox .k-input,
+.erp-grid-body .k-edit-cell .k-dropdown-wrap .k-input,
+#grid .k-edit-cell .k-combobox .k-input,
+#grid .k-edit-cell .k-dropdown-wrap .k-input {
+    height: 32px !important;
+    min-height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 9px !important;
+    font-size: 12px !important;
+    color: #344054 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* Botón/flecha del ComboBox. */
+.erp-grid-body .k-edit-cell .k-combobox .k-select,
+.erp-grid-body .k-edit-cell .k-dropdown-wrap .k-select,
+#grid .k-edit-cell .k-combobox .k-select,
+#grid .k-edit-cell .k-dropdown-wrap .k-select {
+    width: 30px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    line-height: 32px !important;
+    border-left: 1px solid #e4e7ec !important;
+}
+
+/* Foco más visible sin exagerar. */
+.erp-grid-body .k-edit-cell .k-combobox .k-state-focused,
+.erp-grid-body .k-edit-cell .k-dropdown-wrap.k-state-focused,
+#grid .k-edit-cell .k-combobox .k-state-focused,
+#grid .k-edit-cell .k-dropdown-wrap.k-state-focused {
+    border-color: #1677c8 !important;
+    box-shadow: 0 0 0 2px rgba(22,119,200,.10) !important;
+}
+
+/* Buscador que ErpGrid.Editors.js inserta arriba del popup Kendo. */
+.k-animation-container .erp-filter {
+    padding: 8px;
+    border-bottom: 1px solid #e4e7ec;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.k-animation-container .erp-filter .k-textbox {
+    width: 100% !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 6px 9px !important;
+    border: 1px solid #b8c5d1 !important;
+    border-radius: 5px !important;
+    font-size: 12px !important;
+    box-sizing: border-box;
+}
+
+.k-animation-container .erp-filter .k-textbox:focus {
+    outline: none;
+    border-color: #1677c8 !important;
+    box-shadow: 0 0 0 2px rgba(22,119,200,.10) !important;
+}
+
+/* Mantiene el scrollbar visible pero menos invasivo. */
+.erp-grid-body .k-grid-content::-webkit-scrollbar,
+#grid .k-grid-content::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.erp-grid-body .k-grid-content::-webkit-scrollbar-thumb,
+#grid .k-grid-content::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+}

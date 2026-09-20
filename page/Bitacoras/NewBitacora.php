@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/ERPLookup.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/css/erp/erp.layout.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio.css">
+    <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio-grid-fix.css">
     <!-- Ionicons -->
     <link rel="stylesheet" href="<?= DIST ?>/css/ionicons.min.css">
     <link rel="stylesheet" href="<?= PLUGINS ?>/select2/select2.css">
@@ -42,7 +43,7 @@
 <?php
     
     $m_Session = new Session();
-    $iduser = '';
+    $iduser = 25;
     $idemp = '';
     $idsuc = '';
     $dciva = 0;
