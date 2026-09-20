@@ -43,9 +43,9 @@
 <?php
     
     $m_Session = new Session();
-    $iduser = 25;
+    $iduser = '';
     $idemp = '';
-    $idsuc = '';
+    $idsuc = 25;
     $dciva = 0;
     $dcret = 0;
     
