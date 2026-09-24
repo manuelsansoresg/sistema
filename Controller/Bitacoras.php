@@ -111,13 +111,17 @@
         public function GetCliente_Suc_RFC()
         {
             header("Content-type: application/json");
-            
-            $qsuc = BitacorasModel::valorSesion('cveSucursal');
+             /**
+             * TODO: Descomentar linea para que tome la sesion
+             */
+            //$qsuc = BitacorasModel::valorSesion('cveSucursal');
+            $qsuc = 25;
             $qtodos = empty($_POST['qtodos']) ? false : $_POST['qtodos'];
             $data = array();
-            
+           
+                      
             $datos = ClienteModel::GetCliente_Suc_RFC($qsuc);            
-            
+          
             if ($qtodos=="true")
             {
                 foreach ($datos as $row)
@@ -150,31 +154,28 @@
         /*Conceptos*/
         public function GetTarifaAll()
         {
-            header("Content-type: application/json");                      
-            
-            $qcve = empty($_POST['qcve']) ? false : $_POST['qcve'];
-            $qLF = empty($_POST['qlf']) ? false : $_POST['qlf']; /*Tipo de Servicio*/
+            header("Content-type: application/json");
+
+            $qcve = filter_input(INPUT_POST, 'qcve', FILTER_VALIDATE_INT);
+            $qLF = strtoupper(trim((string)($_POST['qlf'] ?? '')));
+            if (!$qcve || !in_array($qLF, ['L', 'F'], true)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Cliente o tipo de servicio inválido.']);
+                return;
+            }
+
             $data = array();
-           
-            $datos = DB::query("SELECT t.pkintid_tarifa AS PKINTID_TARIFA, t.vchleyenda AS VCHLEYENDA,
-                t.mnprecio_unitario AS MNPRECIO_UNITARIO, (t.bitactivo + 0) AS BITACTIVO,
-                t.vchtipo_servicio AS VCHTIPO_SERVICIO, (s.bitcomision + 0) AS bitcomision,
-                (s.bitretencion + 0) AS bitretencion
-                FROM tbltarifas t INNER JOIN tblservicios s ON s.pkintid_servicio = t.fkintid_servicio
-                INNER JOIN tblclientes_sucursal cs ON cs.pkintid_cliente_sucursal = t.fkintid_cliente_sucursal
-                WHERE t.fkintid_cliente_sucursal = :cliente AND cs.fkintid_sucursal = :sucursal AND s.bitactivo = 1",
-                [':cliente' => $qcve, ':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
-            //'on'
-            //MNPRECIO_UNITARIO
-            foreach ($datos as $row)
-            {                           
-                if (($row['BITACTIVO']==true && trim($row['VCHTIPO_SERVICIO'])==trim($qLF))|| ($row['BITACTIVO']==true && trim($row['VCHTIPO_SERVICIO']) == "A"))
-                {
-                    $data[] = array('id' => $row["PKINTID_TARIFA"],'text' =>$row["VCHLEYENDA"],'precio'  => $row["MNPRECIO_UNITARIO"],'ac'=> $row["bitcomision"],'ret' => $row["bitretencion"]); 
-                }
-            }  
-            
-            echo json_encode($data);            
+            foreach (ClienteModel::TarifaConceptos($qcve, $qLF) as $row) {
+                $data[] = array(
+                    'id' => $row['PKINTID_TARIFA'],
+                    'text' => $row['VCHLEYENDA'],
+                    'precio' => $row['MNPRECIO_UNITARIO'],
+                    'ac' => $row['bitcomision'],
+                    'ret' => $row['bitretencion']
+                );
+            }
+
+            echo json_encode($data);
         }
         public function GetTipoCargo()
         {

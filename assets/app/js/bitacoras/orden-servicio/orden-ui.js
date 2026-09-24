@@ -771,6 +771,9 @@ OrdenServicio.initCalculo();
             valueField:"id",
             valueModel:"idconcepto",
             textModel:"servicio",
+            error:function(xhr,status,error){
+                console.error('Error al cargar servicios:',status,error,xhr.responseText);
+            },
             parameters:
             {
                 qcve:"@idcliente",

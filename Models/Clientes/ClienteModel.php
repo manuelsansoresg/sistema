@@ -18,7 +18,7 @@ class ClienteModel extends DB
 
         return DB::query($sql, [':suc' => intval($suc)]);
     }
-    static function TarifaConceptos($cliente)
+    static function TarifaConceptos($cliente, $tipoServicio = null)
     {
         $sql = "SELECT t.PKINTID_TARIFA,t.VCHCLAVE,t.VCHDESCRIPCION,t.MNPRECIO_UNITARIO,t.VCHLEYENDA,t.BITCONTACTO,
                     t.BITTERMINO,t.BITOBS,t.BITACTIVO,t.VCHTIPO_SERVICIO,t.FKINTID_USUARIO,t.DTFECHA_USUARIO,
@@ -26,8 +26,16 @@ class ClienteModel extends DB
                     s.bitretencion
                 FROM TblTarifas t
                 INNER JOIN tblservicios s ON t.FKINTID_SERVICIO = s.pkintid_servicio
-                WHERE FKINTID_CLIENTE_SUCURSAL = :cliente";
+                WHERE t.FKINTID_CLIENTE_SUCURSAL = :cliente
+                  AND t.BITACTIVO = 1
+                  AND s.bitactivo = 1";
 
-        return DB::query($sql, [':cliente' => intval($cliente)]);
+        $params = [':cliente' => intval($cliente)];
+        if ($tipoServicio !== null) {
+            $sql .= " AND COALESCE(NULLIF(UPPER(TRIM(t.VCHTIPO_SERVICIO)), ''), 'A') IN (:tipo_servicio, 'A')";
+            $params[':tipo_servicio'] = strtoupper(trim((string)$tipoServicio));
+        }
+
+        return DB::query($sql, $params);
     }
 }

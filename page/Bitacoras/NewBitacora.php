@@ -45,7 +45,7 @@
     $m_Session = new Session();
     $iduser = '';
     $idemp = '';
-    $idsuc = 25;
+    $idsuc = 0;
     $dciva = 0;
     $dcret = 0;
     
@@ -61,6 +61,8 @@
     {   $dcret = unserialize($m_Session->getCurrentRETENCION()); }
     if (isset($ivaConfigurado)) $dciva = (float)$ivaConfigurado;
     if (isset($retencionConfigurada)) $dcret = (float)$retencionConfigurada;
+
+    
 ?>
 
 </head>

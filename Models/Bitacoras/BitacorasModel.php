@@ -264,7 +264,9 @@ class BitacorasModel extends DB
             $cliente = $this->consulta($pdo, 'SELECT cs.PKINTID_CLIENTE_SUCURSAL FROM ' . $this->tabla('TblClientes_Sucursal') . ' cs INNER JOIN ' . $this->tabla('TblClientes') . ' c ON c.PKINTID_CLIENTE = cs.FKINTID_CLIENTE WHERE cs.PKINTID_CLIENTE_SUCURSAL = ? AND cs.FKINTID_SUCURSAL = ? AND c.BITACTIVO = 1', [$item['idcliente'], $sucursal])->fetch();
             if (!$cliente) throw new InvalidArgumentException('El cliente de la fila ' . ($i + 1) . ' no está activo en la sucursal.');
             $tarifa = $this->consulta($pdo, 'SELECT t.MNPRECIO_UNITARIO AS precio, t.VCHTIPO_SERVICIO AS tipo, (s.bitretencion + 0) AS retencion, (s.bitcomision + 0) AS comision FROM ' . $this->tabla('TblTarifas') . ' t INNER JOIN ' . $this->tabla('tblservicios') . ' s ON s.pkintid_servicio = t.FKINTID_SERVICIO WHERE t.PKINTID_TARIFA = ? AND t.FKINTID_CLIENTE_SUCURSAL = ? AND t.BITACTIVO = 1 AND s.bitactivo = 1 FOR UPDATE', [$item['idconcepto'], $item['idcliente']])->fetch(PDO::FETCH_ASSOC);
-            if (!$tarifa || !in_array(trim($tarifa['tipo']), ['A', $tipoServicio], true)) {
+            $tipoTarifa = $tarifa ? strtoupper(trim((string)$tarifa['tipo'])) : '';
+            if ($tipoTarifa === '') $tipoTarifa = 'A';
+            if (!$tarifa || !in_array($tipoTarifa, ['A', $tipoServicio], true)) {
                 throw new InvalidArgumentException('La tarifa de la fila ' . ($i + 1) . ' no corresponde al cliente o al servicio.');
             }
             $base = self::numero($tarifa['precio'], 'precio del catálogo');

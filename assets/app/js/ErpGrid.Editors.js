@@ -44,9 +44,13 @@
                             data:function()
                             {
                                 var p = ERPGrid.Helpers.resolveParameters(config.parameters,options);
-                                //console.log("Parametros enviados:");
-                                //console.table(p);
                                 return p;
+                            },
+                            error:function(xhr,status,error)
+                            {
+                                if ($.isFunction(config.error)) {
+                                    config.error(xhr,status,error);
+                                }
                             }
                         }
                     },
