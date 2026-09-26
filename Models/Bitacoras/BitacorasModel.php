@@ -157,8 +157,13 @@ class BitacorasModel extends DB
     public function GuardarOrden(array $orden): array
     {
         self::validar($orden);
-        $sucursal = self::id(self::valorSesion('cveSucursal'), 'sucursal de la sesión');
-        $usuario = self::id(self::valorSesion('IdUsuario'), 'usuario de la sesión');
+        /***
+         * TODO: descomentar para dinamismo
+         */
+        //$sucursal = self::id(self::valorSesion('cveSucursal'), 'sucursal de la sesión');
+        //$usuario = self::id(self::valorSesion('IdUsuario'), 'usuario de la sesión');
+        $sucursal = 25;
+        $usuario = 2;
         return Conexion::transaction(function (PDO $pdo) use ($orden, $sucursal, $usuario) {
             $this->cargarEsquema($pdo);
             foreach (['tblsucursal', 'tblbitacora', 'tbldesgloce_serv', 'tblempleados', 'tblunidades'] as $table) {
