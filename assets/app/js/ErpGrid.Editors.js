@@ -63,6 +63,17 @@
                 }, 
                 dataBound:function()
                 {
+                    var combo=this;
+                    var modelValue=options.model.get(config.valueModel);
+                    if (!combo._erpSelectedItem && modelValue!==null && modelValue!==undefined && modelValue!=="") {
+                        $.each(combo.dataSource.data(),function(index,item){
+                            if (String(item[config.valueField])===String(modelValue)) {
+                                combo._erpSelectedItem=item;
+                                return false;
+                            }
+                        });
+                    }
+
                     // Solo si el editor es Servicio
                     if(config.autoSelectFirst)
                     {
@@ -70,6 +81,7 @@
                         {
                             this.select(0);
                             var item=this.dataItem(0);
+                            this._erpSelectedItem=item;
                             self.comboSelected(item,options,config);
                         }
                     }
@@ -101,13 +113,23 @@
                 select:function(e)
                 {
                     var item=this.dataItem(e.item);
+                    this._erpSelectedItem=item || null;
                     self.comboSelected(item,options,config);
                 },
                 change:function()
                 {
-                    var item=this.dataItem();
-                    if(item){
+                    var item=this.dataItem() || this._erpSelectedItem;
+                    var itemValue=item && item[config.valueField];
+                    var itemText=item && item[config.textField];
+                    var validItem=item &&
+                        String(options.model.get(config.valueModel))===String(itemValue) &&
+                        $.trim(this.text())===$.trim(String(itemText));
+
+                    if(validItem){
+                        this._erpSelectedItem=item;
                         self.comboSelected(item,options,config);
+                    } else {
+                        this._erpSelectedItem=null;
                     }
                     /*setTimeout(function()
                     {

@@ -198,7 +198,12 @@ var erpMarcadorUbicacion;
                 var combo=container.find('input[name="'+campo+'"]').data('kendoComboBox');
                 if (!combo) return;
                 combo.bind('change',function(){
-                    if (!this.dataItem()) {
+                    var item=this._erpSelectedItem;
+                    var seleccionValida=item &&
+                        String(options.model.get(campoId))===String(item[this.options.dataValueField]) &&
+                        $.trim(this.text())===$.trim(String(item[this.options.dataTextField]));
+
+                    if (!seleccionValida) {
                         options.model.set(campoId,null);
                         options.model.set(campo,this.text());
                         if (invalidar) invalidar(options.model);
