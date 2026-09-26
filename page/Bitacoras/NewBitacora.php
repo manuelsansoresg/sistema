@@ -45,7 +45,7 @@
     $m_Session = new Session();
     $iduser = '';
     $idemp = '';
-    $idsuc = 0;
+    $idsuc = 25;
     $dciva = 0;
     $dcret = 0;
     
