@@ -1874,9 +1874,12 @@
 }
 
 #mapaUbicacion {
+    position: relative;
+    display: block;
     width: 100%;
     height: 370px;
     min-height: 300px;
+    background: #e5e3df;
 }
 
 .erp-location-empty,

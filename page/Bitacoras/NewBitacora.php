@@ -17,15 +17,11 @@
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/ERPTheme.Kendo.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/ERPLookup.css">
     <link rel="stylesheet" href="<?= ASSETS ?>/css/erp/erp.layout.css">
-    <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio.css">
+    <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio.css?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/css/erp/orden-servicio.css')) ?>">
     <link rel="stylesheet" href="<?= ASSETS ?>/app/css/erp/orden-servicio-grid-fix.css">
     <!-- Ionicons -->
     <link rel="stylesheet" href="<?= DIST ?>/css/ionicons.min.css">
     <link rel="stylesheet" href="<?= PLUGINS ?>/select2/select2.css">
-    <!-- Leaflet / OpenStreetMap -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    
-    
     <!-- AdminLTE Skins. Choose a skin from the css/skins
     folder instead of downloading all of them to reduce the load. -->
     <link rel="stylesheet" href="<?= CSS ?>/kendo/css/kendo.common.min.css" />
@@ -483,7 +479,7 @@
                             </div>
                         </div>
                         <div class="erp-location-examples">
-                            Ejemplos: <strong>Monterrey</strong>, <strong>64000</strong>, <strong>Centro, Monterrey</strong> o <strong>25.6866,-100.3161</strong>
+                            Ejemplos: <strong>calle 34c 331</strong>, <strong>97115</strong>, <strong>Centro, Mérida</strong> o <strong>20.967370,-89.592586</strong>
                         </div>
                     </div>
                     <div class="erp-location-layout">
@@ -535,7 +531,6 @@
     <script src="<?= ASSETS ?>/app/js/ERPDatePicker.js"></script>
     
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="<?= JS ?>/funciones.js"></script>
     <script>
         window.ORDEN_CONFIG = {
@@ -544,10 +539,22 @@
             empleados: <?= json_encode(json_decode($Empleado), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
             claves: <?= json_encode(json_decode($Claves), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
             iva: <?= json_encode($dciva) ?>,
-            retencion: <?= json_encode($dcret) ?>
+            retencion: <?= json_encode($dcret) ?>,
+            googleMapsDisponible: <?= GOOGLE_MAPS_API_KEY !== '' ? 'true' : 'false' ?>
         };
+        window.erpGoogleMapsError = function() {
+            window.erpGoogleMapsFallo = true;
+            if (window.jQuery) {
+                $('#ubicacionResultados').html('<div class="erp-location-empty"><i class="fa fa-warning"></i><span>No fue posible autorizar Google Maps. Verifique la clave, sus restricciones y las APIs habilitadas.</span></div>');
+            }
+        };
+        window.gm_authFailure = window.erpGoogleMapsError;
     </script>
-    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-api.js"></script>
-    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-ui.js"></script>
-    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-servicio.js"></script>
+    <?php if (GOOGLE_MAPS_API_KEY !== ''): ?>
+        <!-- Restringir esta clave en Google Cloud por HTTP referrers y habilitar solamente Maps JavaScript API y Places API. -->
+        <script src="https://maps.googleapis.com/maps/api/js?key=<?= rawurlencode(GOOGLE_MAPS_API_KEY) ?>&amp;libraries=places&amp;language=es&amp;region=MX" onerror="window.erpGoogleMapsError()"></script>
+    <?php endif; ?>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-api.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-api.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-ui.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-ui.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-servicio.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-servicio.js')) ?>"></script>
 </html>

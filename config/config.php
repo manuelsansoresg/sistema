@@ -1,4 +1,36 @@
 <?php
+    /*
+     * Carga únicamente variables simples del archivo .env cuando el servidor no
+     * las haya definido ya. No se agrega una dependencia para una sola clave.
+     */
+    $environmentFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+    if (is_readable($environmentFile))
+    {
+        $environmentLines = file($environmentFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($environmentLines as $environmentLine)
+        {
+            $environmentLine = trim($environmentLine);
+            if ($environmentLine === '' || strpos($environmentLine, '#') === 0 || strpos($environmentLine, '=') === false) continue;
+
+            list($environmentName, $environmentValue) = array_map('trim', explode('=', $environmentLine, 2));
+            if ($environmentName !== 'GOOGLE_MAPS_API_KEY' || getenv($environmentName) !== false) continue;
+
+            if (strlen($environmentValue) >= 2)
+            {
+                $firstCharacter = $environmentValue[0];
+                $lastCharacter = substr($environmentValue, -1);
+                if (($firstCharacter === '"' && $lastCharacter === '"') || ($firstCharacter === "'" && $lastCharacter === "'"))
+                {
+                    $environmentValue = substr($environmentValue, 1, -1);
+                }
+            }
+
+            putenv($environmentName . '=' . $environmentValue);
+            $_ENV[$environmentName] = $environmentValue;
+        }
+    }
+
+    define('GOOGLE_MAPS_API_KEY', (string)(getenv('GOOGLE_MAPS_API_KEY') ?: ''));
     
     $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         ? 'https'

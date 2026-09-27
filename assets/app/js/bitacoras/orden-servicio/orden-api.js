@@ -7,8 +7,7 @@ window.OrdenApi = {
         GetCliente_Suc_RFC:window.ORDEN_CONFIG.baseUrl + '/Bitacoras/GetCliente_Suc_RFC',
         GetTarifaAll:window.ORDEN_CONFIG.baseUrl + '/Bitacoras/GetTarifaAll',
         GetTipoCargo:window.ORDEN_CONFIG.baseUrl + '/Bitacoras/GetTipoCargo',
-        GuardarOrden:window.ORDEN_CONFIG.baseUrl + '/Bitacoras/GuardarOrden',
-        BuscarUbicaciones:'https://nominatim.openstreetmap.org/search'
+        GuardarOrden:window.ORDEN_CONFIG.baseUrl + '/Bitacoras/GuardarOrden'
     },
     getMarcas:function(options) {
         return $.ajax($.extend({}, options, {url:OrdenApi.urls.GetAllMarca}));
@@ -30,8 +29,5 @@ window.OrdenApi = {
     },
     guardarOrden:function(options) {
         return $.ajax($.extend({}, options, {url:OrdenApi.urls.GuardarOrden}));
-    },
-    buscarUbicaciones:function(options) {
-        return $.ajax($.extend({}, options, {url:OrdenApi.urls.BuscarUbicaciones}));
     }
 };

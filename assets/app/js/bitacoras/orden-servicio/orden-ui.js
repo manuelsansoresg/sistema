@@ -28,6 +28,12 @@ var erpUbicacionTipo;
 var erpUbicacionSeleccionada;
 var erpMapaUbicacion;
 var erpMarcadorUbicacion;
+var erpGeocoderUbicacion;
+var erpAutocompleteUbicacion;
+var erpPlacesUbicacion;
+var erpSolicitudGeocoding = 0;
+var erpCentroBusquedaUbicacion = {lat:20.967370, lng:-89.592586};
+var erpGeolocalizacionSolicitada = false;
 
         
         // Ignorar respuestas de una clasificación o marca que ya cambió.
@@ -357,19 +363,67 @@ var erpMarcadorUbicacion;
 
         function iniciarMapaUbicacion()
         {
-            if (erpMapaUbicacion) return;
-
-            erpMapaUbicacion = L.map('mapaUbicacion', {zoomControl:true}).setView([23.6345, -102.5528], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            if (!window.ORDEN_CONFIG.googleMapsDisponible)
             {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(erpMapaUbicacion);
+                mostrarErrorMapa('Configure GOOGLE_MAPS_API_KEY en el archivo .env para utilizar el selector de ubicación.');
+                return false;
+            }
+            if (window.erpGoogleMapsFallo || !window.google || !google.maps)
+            {
+                mostrarErrorMapa('No fue posible cargar Google Maps. Verifique la conexión y la configuración de la API.');
+                return false;
+            }
+            if (erpMapaUbicacion) return true;
+
+            erpMapaUbicacion = new google.maps.Map(document.getElementById('mapaUbicacion'), {
+                center:erpCentroBusquedaUbicacion,
+                zoom:11,
+                mapTypeControl:false,
+                streetViewControl:false
+            });
+            erpGeocoderUbicacion = new google.maps.Geocoder();
+            erpMapaUbicacion.addListener('click', function(e)
+            {
+                seleccionarPuntoMapa(e.latLng.lat(), e.latLng.lng(), 'Ubicación marcada manualmente');
+            });
+
+            return true;
+        }
+
+
+        function obtenerContextoLocalUbicacion()
+        {
+            if (erpGeolocalizacionSolicitada || !navigator.geolocation) return;
+            erpGeolocalizacionSolicitada = true;
+
+            navigator.geolocation.getCurrentPosition(function(posicion)
+            {
+                var lat = Number(posicion.coords.latitude);
+                var lon = Number(posicion.coords.longitude);
+                if (!coordenadasValidas(lat, lon)) return;
+
+                erpCentroBusquedaUbicacion = {lat:lat, lng:lon};
+                if (erpMapaUbicacion && !erpUbicacionSeleccionada)
+                {
+                    erpMapaUbicacion.setCenter(erpCentroBusquedaUbicacion);
+                    erpMapaUbicacion.setZoom(13);
+                }
+            }, function()
+            {
+                /* Si el usuario no comparte ubicación se conserva la preferencia de Mérida. */
+            }, {enableHighAccuracy:false, timeout:5000, maximumAge:300000});
+        }
+
+
+        function mostrarErrorMapa(mensaje)
+        {
+            $('#ubicacionResultados').html('<div class="erp-location-empty"><i class="fa fa-warning"></i><span>' + $('<div>').text(mensaje).html() + '</span></div>');
         }
 
 
         function abrirModalUbicacion(tipo)
         {
+            obtenerContextoLocalUbicacion();
             erpUbicacionTipo = tipo || 'contacto';
             $('#modalUbicacionTitulo').text(erpUbicacionTipo === 'contacto' ? 'Buscar ubicación de contacto' : 'Buscar ubicación de término');
             $('#txtbusquedaubicacion').val('');
@@ -377,27 +431,36 @@ var erpMarcadorUbicacion;
             $('#ubicacionSeleccionada').hide();
             $('#btnUsarUbicacion').prop('disabled', true);
             erpUbicacionSeleccionada = null;
+
+            var $latitud = $('#' + (erpUbicacionTipo === 'contacto' ? 'txtcontactolat' : 'txtterminolat'));
+            var $longitud = $('#' + (erpUbicacionTipo === 'contacto' ? 'txtcontactolon' : 'txtterminolon'));
+            var $direccion = $('#' + (erpUbicacionTipo === 'contacto' ? 'txtcontacto' : 'txttermino'));
+            var latitud = parseFloat($latitud.val());
+            var longitud = parseFloat($longitud.val());
+            if (coordenadasValidas(latitud, longitud))
+            {
+                erpSeleccionarUbicacion({lat:latitud, lon:longitud, display_name:$direccion.val() || descripcionCoordenadas(latitud, longitud)});
+            }
             $('#modal-ubicacion').modal('show');
         }
 
 
         function erpMostrarMarcador(lat, lon)
         {
-            iniciarMapaUbicacion();
-            if (erpMarcadorUbicacion)
+            if (!iniciarMapaUbicacion()) return;
+            var posicion = {lat:lat, lng:lon};
+            if (!erpMarcadorUbicacion)
             {
-                erpMapaUbicacion.removeLayer(erpMarcadorUbicacion);
+                erpMarcadorUbicacion = new google.maps.Marker({map:erpMapaUbicacion, position:posicion, draggable:true});
+                erpMarcadorUbicacion.addListener('dragend', function(e)
+                {
+                    seleccionarPuntoMapa(e.latLng.lat(), e.latLng.lng(), 'Ubicación seleccionada');
+                });
             }
-            erpMarcadorUbicacion = L.marker([lat, lon], {draggable:true}).addTo(erpMapaUbicacion);
-            erpMarcadorUbicacion.on('dragend', function(e)
-            {
-                var p=e.target.getLatLng();
-                if (!erpUbicacionSeleccionada) erpUbicacionSeleccionada={display_name:'Ubicación seleccionada'};
-                erpUbicacionSeleccionada.lat=p.lat;
-                erpUbicacionSeleccionada.lon=p.lng;
-                $('#ubicacionSeleccionadaCoordenadas').text('Lat: '+p.lat.toFixed(6)+' | Lon: '+p.lng.toFixed(6));
-            });
-            erpMapaUbicacion.setView([lat, lon], 17);
+            else erpMarcadorUbicacion.setPosition(posicion);
+
+            erpMapaUbicacion.setCenter(posicion);
+            erpMapaUbicacion.setZoom(17);
         }
 
 
@@ -405,7 +468,8 @@ var erpMarcadorUbicacion;
         {
             var lat = parseFloat(item.lat);
             var lon = parseFloat(item.lon);
-            if (isNaN(lat) || isNaN(lon)) return;
+            if (!coordenadasValidas(lat, lon)) return false;
+            erpSolicitudGeocoding++;
 
             erpUbicacionSeleccionada =
             {
@@ -419,6 +483,65 @@ var erpMarcadorUbicacion;
             $('#ubicacionSeleccionada').show();
             $('#btnUsarUbicacion').prop('disabled', false);
             erpMostrarMarcador(lat, lon);
+            return true;
+        }
+
+
+        function coordenadasValidas(lat, lon)
+        {
+            return isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+        }
+
+
+        function descripcionCoordenadas(lat, lon)
+        {
+            return 'Coordenadas ' + Number(lat).toFixed(6) + ', ' + Number(lon).toFixed(6);
+        }
+
+
+        function seleccionarPuntoMapa(lat, lon, descripcion)
+        {
+            erpSeleccionarUbicacion({lat:lat, lon:lon, display_name:descripcion || descripcionCoordenadas(lat, lon)});
+            obtenerDireccionCoordenadas(lat, lon);
+        }
+
+
+        function obtenerDireccionCoordenadas(lat, lon)
+        {
+            if (!erpGeocoderUbicacion) return;
+            var solicitud = ++erpSolicitudGeocoding;
+            erpGeocoderUbicacion.geocode({location:{lat:lat, lng:lon}}, function(resultados, estado)
+            {
+                if (solicitud !== erpSolicitudGeocoding || !erpUbicacionSeleccionada) return;
+                if (estado === 'OK' && resultados && resultados[0])
+                {
+                    erpUbicacionSeleccionada.display_name = resultados[0].formatted_address;
+                    $('#ubicacionSeleccionadaTexto').text(erpUbicacionSeleccionada.display_name);
+                }
+            });
+        }
+
+
+        function obtenerServiciosPlaces()
+        {
+            if (!iniciarMapaUbicacion() || !google.maps.places)
+            {
+                mostrarErrorMapa('Google Places no está disponible. Verifique que Places API esté habilitada para la clave configurada.');
+                return false;
+            }
+            if (!erpAutocompleteUbicacion) erpAutocompleteUbicacion = new google.maps.places.AutocompleteService();
+            if (!erpPlacesUbicacion) erpPlacesUbicacion = new google.maps.places.PlacesService(erpMapaUbicacion);
+            return true;
+        }
+
+
+        function limitesBusquedaLocal()
+        {
+            /* Aproximadamente 50 km alrededor de la ubicación del usuario/Mérida. */
+            return new google.maps.LatLngBounds(
+                {lat:erpCentroBusquedaUbicacion.lat - 0.45, lng:erpCentroBusquedaUbicacion.lng - 0.50},
+                {lat:erpCentroBusquedaUbicacion.lat + 0.45, lng:erpCentroBusquedaUbicacion.lng + 0.50}
+            );
         }
 
 
@@ -436,54 +559,80 @@ var erpMarcadorUbicacion;
             {
                 var lat = parseFloat(latLon[1]);
                 var lon = parseFloat(latLon[2]);
-                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+                if (coordenadasValidas(lat, lon))
                 {
-                    erpSeleccionarUbicacion({lat:lat, lon:lon, display_name:'Coordenadas ' + lat + ', ' + lon});
+                    seleccionarPuntoMapa(lat, lon, descripcionCoordenadas(lat, lon));
                     return;
                 }
+                Swal.fire({icon:'warning', title:'Coordenadas inválidas', text:'La latitud debe estar entre -90 y 90 y la longitud entre -180 y 180.'});
+                return;
             }
 
+            if (!obtenerServiciosPlaces()) return;
             $('#ubicacionResultados').html('<div class="erp-location-loading"><i class="fa fa-spinner fa-spin"></i> Buscando...</div>');
 
-            OrdenApi.buscarUbicaciones({url:OrdenApi.urls.BuscarUbicaciones,
-                method:'GET',
-                dataType:'json',
-                data:
+            var solicitudPredicciones = {
+                /* Igual que buscar sobre el mapa de Mérida: la ciudad forma parte del contexto. */
+                input:texto + ', Mérida, Yucatán',
+                componentRestrictions:{country:'mx'},
+                locationRestriction:limitesBusquedaLocal(),
+                origin:erpCentroBusquedaUbicacion
+            };
+            function mostrarPredicciones(resultados, estado, esRespaldo)
+            {
+                if (estado !== google.maps.places.PlacesServiceStatus.OK || !resultados || !resultados.length)
                 {
-                    q:texto,
-                    format:'jsonv2',
-                    addressdetails:1,
-                    limit:8,
-                    countrycodes:'mx'
-                },
-                headers:{'Accept-Language':'es-MX,es;q=0.9'},
-                success:function(resultados)
-                {
-                    if (!resultados || !resultados.length)
+                    if (!esRespaldo)
                     {
-                        $('#ubicacionResultados').html('<div class="erp-location-empty"><i class="fa fa-map-marker"></i><span>No se encontraron ubicaciones.</span></div>');
+                        /* Si no existe coincidencia local, permitir resultados del resto de México. */
+                        erpAutocompleteUbicacion.getPlacePredictions({
+                            input:texto,
+                            componentRestrictions:{country:'mx'},
+                            locationBias:limitesBusquedaLocal(),
+                            origin:erpCentroBusquedaUbicacion
+                        }, function(resultadosRespaldo, estadoRespaldo)
+                        {
+                            mostrarPredicciones(resultadosRespaldo, estadoRespaldo, true);
+                        });
                         return;
                     }
-
-                    var html = '';
-                    $.each(resultados, function(i, item)
-                    {
-                        html += '<button type="button" class="erp-location-result" data-index="' + i + '">' +
-                                    '<i class="fa fa-map-marker"></i>' +
-                                    '<span>' + $('<div>').text(item.display_name).html() + '</span>' +
-                                '</button>';
-                    });
-                    $('#ubicacionResultados').html(html);
-
-                    $('#ubicacionResultados .erp-location-result').each(function(i)
-                    {
-                        $(this).on('click', function(){ erpSeleccionarUbicacion(resultados[i]); });
-                    });
-                },
-                error:function()
-                {
-                    $('#ubicacionResultados').html('<div class="erp-location-empty"><i class="fa fa-warning"></i><span>No fue posible consultar el servicio de mapas.</span></div>');
+                    var mensaje = estado === google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+                        ? 'No se encontraron ubicaciones.'
+                        : 'No fue posible consultar Google Places. Intente nuevamente.';
+                    $('#ubicacionResultados').html('<div class="erp-location-empty"><i class="fa fa-map-marker"></i><span>' + mensaje + '</span></div>');
+                    return;
                 }
+
+                var html = '';
+                $.each(resultados, function(i, item)
+                {
+                    html += '<button type="button" class="erp-location-result" data-index="' + i + '">' +
+                                '<i class="fa fa-map-marker"></i>' +
+                                '<span>' + $('<div>').text(item.description).html() + '</span>' +
+                            '</button>';
+                });
+                $('#ubicacionResultados').html(html);
+                $('#ubicacionResultados .erp-location-result').on('click', function()
+                {
+                    var prediccion = resultados[Number($(this).attr('data-index'))];
+                    erpPlacesUbicacion.getDetails({placeId:prediccion.place_id, fields:['formatted_address', 'name', 'geometry']}, function(lugar, detalleEstado)
+                    {
+                        if (detalleEstado !== google.maps.places.PlacesServiceStatus.OK || !lugar || !lugar.geometry || !lugar.geometry.location)
+                        {
+                            Swal.fire({icon:'error', title:'Ubicación no disponible', text:'Google Places no devolvió coordenadas para este resultado.'});
+                            return;
+                        }
+                        erpSeleccionarUbicacion({
+                            display_name:lugar.formatted_address || lugar.name || prediccion.description,
+                            lat:lugar.geometry.location.lat(),
+                            lon:lugar.geometry.location.lng()
+                        });
+                    });
+                });
+            }
+            erpAutocompleteUbicacion.getPlacePredictions(solicitudPredicciones, function(resultados, estado)
+            {
+                mostrarPredicciones(resultados, estado, false);
             });
         }
 window.OrdenUI = {
@@ -1071,7 +1220,7 @@ OrdenServicio.init();
 
 
         /* =========================================================
-         * UBICACIONES / LEAFLET + OPENSTREETMAP
+         * UBICACIONES / GOOGLE MAPS + GOOGLE PLACES
          * ========================================================= */
         erpUbicacionTipo = 'contacto';
 
@@ -1081,19 +1230,25 @@ OrdenServicio.init();
 
         erpMarcadorUbicacion = null;
 
+        erpGeocoderUbicacion = null;
+
+        erpAutocompleteUbicacion = null;
+
+        erpPlacesUbicacion = null;
+
 
         $('#modal-ubicacion').on('shown.bs.modal', function()
         {
-            iniciarMapaUbicacion();
-            window.setTimeout(function(){ erpMapaUbicacion.invalidateSize(); }, 100);
-            if (!erpMapaUbicacion._erpClickBound)
+            if (iniciarMapaUbicacion())
             {
-                erpMapaUbicacion.on('click', function(e)
+                window.setTimeout(function()
                 {
-                    var nombre=(erpUbicacionSeleccionada && erpUbicacionSeleccionada.display_name) || 'Ubicación marcada manualmente';
-                    erpSeleccionarUbicacion({lat:e.latlng.lat, lon:e.latlng.lng, display_name:nombre});
-                });
-                erpMapaUbicacion._erpClickBound=true;
+                    google.maps.event.trigger(erpMapaUbicacion, 'resize');
+                    if (erpUbicacionSeleccionada)
+                    {
+                        erpMapaUbicacion.setCenter({lat:erpUbicacionSeleccionada.lat, lng:erpUbicacionSeleccionada.lon});
+                    }
+                }, 100);
             }
         });
 
@@ -1120,15 +1275,15 @@ OrdenServicio.init();
 
             if (erpUbicacionTipo === 'contacto')
             {
-                $('#txtcontacto').val(valor);
-                $('#txtcontactolat').val(erpUbicacionSeleccionada.lat);
-                $('#txtcontactolon').val(erpUbicacionSeleccionada.lon);
+                $('#txtcontacto').val(valor).trigger('input').trigger('change');
+                $('#txtcontactolat').val(erpUbicacionSeleccionada.lat).trigger('input').trigger('change');
+                $('#txtcontactolon').val(erpUbicacionSeleccionada.lon).trigger('input').trigger('change');
             }
             else
             {
-                $('#txttermino').val(valor);
-                $('#txtterminolat').val(erpUbicacionSeleccionada.lat);
-                $('#txtterminolon').val(erpUbicacionSeleccionada.lon);
+                $('#txttermino').val(valor).trigger('input').trigger('change');
+                $('#txtterminolat').val(erpUbicacionSeleccionada.lat).trigger('input').trigger('change');
+                $('#txtterminolon').val(erpUbicacionSeleccionada.lon).trigger('input').trigger('change');
             }
 
             $('#modal-ubicacion').modal('hide');
