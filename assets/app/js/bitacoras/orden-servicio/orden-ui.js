@@ -47,7 +47,9 @@ var erpGeolocalizacionSolicitada = false;
                 success([]);
                 return { abort: function() {} };
             }
-            const request = (combo === '#cbomarca' ? OrdenApi.getMarcas(params) : OrdenApi.getTipos(params));
+            const request = combo === '#cbomarca'
+                ? OrdenApp.Api.cargarMarcas(params.data.qclas, params.data.buscar)
+                : OrdenApp.Api.cargarTipos(params.data.qmarca, params.data.buscar);
             request.done(function(response) {
                 if (vigente()) success(response);
             });
@@ -62,17 +64,11 @@ var erpGeolocalizacionSolicitada = false;
         function Loadgrua(idoperador)
         {
            if (!idoperador) { $('#cbogrua').empty().trigger('change'); return; }
-           OrdenApi.getGruas({url:OrdenApi.urls.GetAllGrua,
-                type:'POST',
-                dataType:'json',           
-                data:{  qopcion:1, qope:idoperador },                     
-                success:function(resp)
-                {
-                    if (String(idoperador) !== String($('#cbooperador').val())) return;
-                    m_gruas = resp || [];
-                    filtrargrua();
-                }
-            });
+           OrdenApp.Api.cargarGruas(idoperador).done(function(resp) {
+               if (String(idoperador) !== String($('#cbooperador').val())) return;
+               m_gruas = resp || [];
+               filtrargrua();
+           });
         }
 
         function filtrargrua()
@@ -635,7 +631,19 @@ var erpGeolocalizacionSolicitada = false;
                 mostrarPredicciones(resultados, estado, false);
             });
         }
-window.OrdenUI = {
+window.OrdenApp = window.OrdenApp || {};
+window.OrdenApp.UI = {
+    obtenerMensajeError:function(xhr, alternativo) {
+        var respuesta = xhr && xhr.responseJSON;
+        if (!respuesta && xhr && xhr.responseText) {
+            try { respuesta = JSON.parse(xhr.responseText); } catch (error) { respuesta = null; }
+        }
+        return respuesta && respuesta.message ? respuesta.message : alternativo;
+    },
+    mostrarErrorAjax:function(xhr, alternativo) {
+        Swal.fire({icon:'error', title:'No fue posible completar la operación',
+            text:this.obtenerMensajeError(xhr, alternativo || 'Error al comunicarse con el servidor.')});
+    },
     init:function() {
          
                         
@@ -742,10 +750,10 @@ window.OrdenUI = {
             placeholder:'Seleccione marca',
             ajax:
             {
-                url:OrdenApi.urls.GetAllMarca,
+                url:OrdenApp.Api.urls.cargarMarcas,
                 error:function(xhr, status, error) {
                     if (status === 'abort') return;
-                    console.error('Error catálogo vehículo:', status, error, xhr.responseText);
+                    OrdenApp.UI.mostrarErrorAjax(xhr, 'No fue posible cargar las marcas.');
                 },
                 transport:function(params, success, failure) {
                     return transporteVehiculo('#cbomarca', params, success, failure);
@@ -762,7 +770,6 @@ window.OrdenUI = {
                 },
                 processResults: function (response) 
                 {
-                    console.log('GetAllMarca respuesta', response);
                     return { results:response };
                 },
                 cache: false
@@ -781,10 +788,10 @@ window.OrdenUI = {
             width:'100%',
             placeholder:'Seleccione tipo',
             ajax:{
-                url:OrdenApi.urls.GetAllTipo,
+                url:OrdenApp.Api.urls.cargarTipos,
                 error:function(xhr, status, error) {
                     if (status === 'abort') return;
-                    console.error('Error catálogo vehículo:', status, error, xhr.responseText);
+                    OrdenApp.UI.mostrarErrorAjax(xhr, 'No fue posible cargar los tipos.');
                 },
                 transport:function(params, success, failure) {
                     return transporteVehiculo('#cbotipo', params, success, failure);
@@ -793,7 +800,6 @@ window.OrdenUI = {
                 dataType:'json',
                 delay:250,
                 data:function(params){
-                    console.log('Marca seleccionada:', $('#cbomarca').val());
                     return{
                         buscar: params.term || '',
                         qopcion:1,                    
@@ -801,7 +807,6 @@ window.OrdenUI = {
                     };
                 },
                 processResults:function(response){
-                    console.log('Tipos recibidos:', response);
                     return{
                         results: response
                     };
@@ -881,11 +886,11 @@ window.OrdenUI = {
                 total:"#lbltotal"
             }
         });
-OrdenServicio.initCalculo();
+OrdenApp.Servicio.initCalculo();
 
         editorCliente = detalle.createComboEditor(
         {
-            url:OrdenApi.urls.GetCliente_Suc_RFC,
+            url:OrdenApp.Api.urls.cargarClientes,
             textField:"text",
             valueField:"id",
             valueModel:"idcliente",
@@ -909,24 +914,24 @@ OrdenServicio.initCalculo();
                 options.model.set("cargo",item.cargo);
                 var clienteId=item.id;
                 options.model.set('cargoRequerido',!!item.idcargo);
-                OrdenApi.getTipoCargo({url:OrdenApi.urls.GetTipoCargo,type:'POST',dataType:'json',data:{qcve:clienteId},success:function(cargos){
+                OrdenApp.Api.cargarCargos(clienteId).done(function(cargos){
                     if (String(options.model.get('idcliente')) === String(clienteId)) {
                         options.model.set('cargoRequerido',!!(cargos && cargos.length));
                     }
-                }});
+                });
             }
         });
 
         
         editorconceptos = detalle.createComboEditor(
         {   
-            url:OrdenApi.urls.GetTarifaAll,
+            url:OrdenApp.Api.urls.cargarTarifas,
             textField:"text",
             valueField:"id",
             valueModel:"idconcepto",
             textModel:"servicio",
             error:function(xhr,status,error){
-                console.error('Error al cargar servicios:',status,error,xhr.responseText);
+                OrdenApp.UI.mostrarErrorAjax(xhr, 'No fue posible cargar los servicios.');
             },
             parameters:
             {
@@ -959,7 +964,7 @@ OrdenServicio.initCalculo();
 
         editorcargo = detalle.createComboEditor(
         {   
-            url:OrdenApi.urls.GetTipoCargo,
+            url:OrdenApp.Api.urls.cargarCargos,
             textField:"text",
             valueField:"id",
             valueModel:"idcargo",
@@ -985,96 +990,8 @@ OrdenServicio.initCalculo();
 
         editorcargo=validarEditorCatalogo(editorcargo,'cargo','idcargo');
 
-        detalle.settings.columns = 
-        [
-            /* CLIENTE */
-            {
-                field: "cliente", title: "Cliente", editor: editorCliente,width: 145,editable :true,
-                headerAttributes: { class: "erp-grid-center" },attributes: {class: "erp-grid-text"}
-            }, 
-            /* SERVICIO */
-            {
-                field: "servicio", title: "Servicio", editor: editorconceptos,width: 180,
-                headerAttributes: { class: "erp-grid-center" },attributes: { class: "erp-grid-text" }
-            },
-            /* ASISTENCIA */
-            {
-                field: "asistencia", title: "Asistencia", width: 80,
-                headerAttributes: { class: "erp-grid-center" }, attributes: { class: "erp-grid-center" }
-            },
-            /* EXPEDIENTE */
-            {
-                field: "expendiente", title: "Exp.", width: 65, headerAttributes: { class: "erp-grid-center" },
-                attributes: { class: "erp-grid-center" }
-            },
-            /* KMN */
-            {
-                field: "kmn",title: "KMN", width: 48, headerAttributes: { class: "erp-grid-center" },
-                attributes: { class: "erp-grid-center" }
-            },
-            /* KM */
-            {
-                field: "km", title: "KM", width: 48, headerAttributes: { class: "erp-grid-center" },
-                attributes: { class: "erp-grid-center" }
-            },
-            /* CANTIDAD */
-            {
-                field: "cantidad", title: "Cant.", width: 55, headerAttributes: { class: "erp-grid-center" },
-                attributes: { class: "erp-grid-center" }
-            },
-            /* PRECIO */
-            {
-                field: "precio", title: "Precio", width: 78, format: "{0:c}",  editor:editorPrecio, attributes: { class: "erp-grid-money" },
-                headerAttributes: { class: "erp-grid-center" }
-            },
-            /* IVA */
-            {
-                field: "iva", title: "IVA", width: 75, format: "{0:c}", editable: false, 
-                attributes: { class: "erp-grid-money erp-grid-readonly" }, headerAttributes: { class: "erp-grid-center" }
-            },
-            /* SUBTOTAL */
-            {
-                field: "subtotal", title: "Subtotal", width: 82, format: "{0:c}", editable: false,
-                attributes: { class: "erp-grid-money erp-grid-readonly" }, headerAttributes: { class: "erp-grid-center" }
-            },
-            /* TOTAL */
-            {
-                field: "total", title: "Total", width: 82, format: "{0:c}", editable: false, 
-                attributes: { class: "erp-grid-money erp-grid-total erp-grid-readonly" },headerAttributes: { class: "erp-grid-center" }
-            },
-            /* TIPO CARGO */
-            {
-                field: "cargo", title: "Cargo", editor: editorcargo, width: 72, 
-                headerAttributes: { class: "erp-grid-center" }, attributes: { class: "erp-grid-center" }
-            },
-            /* AC */
-            {
-                field: "ac", title: "AC", width: 38, minScreenWidth: 35, editor: editorCheck,
-                template:
-                    "# if(data.ac){ #" +
-                        "<span class='erp-check ok'></span>" +
-                    "# } else { #" +
-                        "<span class='erp-check no'></span>" +
-                    "# } #",
-                editable: false, headerAttributes: { class: "erp-grid-center" },
-                attributes: { class: "erp-grid-center" }
-            },
-            /* ACCIONES DE LA FILA */
-            {
-                title: "Acciones", width: 92, editable: false, sortable: false,
-                headerAttributes: { class: "erp-grid-center erp-grid-actions-header" },
-                attributes: { class: "erp-grid-center erp-grid-actions-cell" },
-                template:
-                    "<div class='erp-row-actions'>" +
-                        "<button type='button' class='erp-row-action erp-row-add' title='Agregar fila' aria-label='Agregar fila'>" +
-                            "<i class='fa fa-plus' aria-hidden='true'></i>" +
-                        "</button>" +
-                        "<button type='button' class='erp-row-action erp-row-remove' title='Quitar fila' aria-label='Quitar fila'>" +
-                            "<i class='fa fa-trash' aria-hidden='true'></i>" +
-                        "</button>" +
-                    "</div>"
-            }
-        ];
+        detalle.settings.columns = OrdenApp.Grid.crearColumnas({cliente:editorCliente, concepto:editorconceptos,
+            precio:editorPrecio, cargo:editorcargo, check:editorCheck});
 
        
         detalle.init();
@@ -1216,7 +1133,7 @@ OrdenServicio.initCalculo();
             $('#citaConfirmada').show();
             $('#modal-cita').modal('hide');
         });
-OrdenServicio.init();
+OrdenApp.Servicio.init();
 
 
         /* =========================================================

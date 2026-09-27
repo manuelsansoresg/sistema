@@ -20,18 +20,60 @@
         }
         public function NuevoServicio()
         {
+            $this->cargarFormularioOrden('nuevo');
+        }
+
+        public function EditarServicio($bis = '')
+        {
+            $bis = rawurldecode(trim((string)$bis));
+            if ($bis === '') {
+                http_response_code(400);
+                echo 'El BIS de la orden es obligatorio.';
+                return;
+            }
+            $this->cargarFormularioOrden('editar', $bis);
+        }
+
+        private function cargarFormularioOrden(string $modo, ?string $bis = null): void
+        {
             $fiscal = DB::First('SELECT dciva, dcretencion FROM tblsucursal WHERE pkintid_sucursal = :sucursal',
                 [':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
-            $this->getView($this, "NewBitacora", [
+            $this->getView($this, $modo === 'editar' ? 'EditBitacora' : 'NewBitacora', [
                 'page_name'      => "Bitacoras",
                 'function_js'    => "Bitacora.js",
                 'tipclasif'      => json_encode(VehiculoModel::GetClasificacionesBase()),
-                'Empleado'       => json_encode($this->GetAllEmpleado()),
+                'Empleado'       => json_encode($this->GetAllEmpleado($bis)),
                 'Claves'         => json_encode($this->AllClave()),
                 'ivaConfigurado' => $fiscal['dciva'] ?? null,
-                'retencionConfigurada' => $fiscal['dcretencion'] ?? null
+                'retencionConfigurada' => $fiscal['dcretencion'] ?? null,
+                'modoOrden'      => $modo,
+                'bisOrden'       => $bis
             ]);
-        }               
+        }
+
+        public function Ordenes()
+        {
+            $this->getView($this, 'Ordenes', ['page_name' => 'Órdenes de servicio']);
+        }
+
+        public function GetOrdenes()
+        {
+            $this->responderJson(function () {
+                $inicio = max(0, (int)($_GET['start'] ?? 0));
+                $limite = max(1, min(100, (int)($_GET['length'] ?? 25)));
+                $buscar = trim((string)($_GET['search']['value'] ?? ''));
+                return $this->modelo->ObtenerOrdenes($inicio, $limite, $buscar);
+            });
+        }
+
+        public function GetOrden($bis = '')
+        {
+            $bis = rawurldecode(trim((string)$bis));
+            $this->responderJson(function () use ($bis) {
+                if ($bis === '') throw new InvalidArgumentException('El BIS es obligatorio.');
+                return $this->modelo->ObtenerOrden($bis);
+            });
+        }
         /*Marcas*/    
         public function GetAllMarca()
         {            
@@ -93,12 +135,18 @@
             
             $opcion = $_POST['qopcion'];
             $id = $_POST['qope'];
+            $bis = trim((string)($_POST['bis'] ?? ''));
 
             $data = [];
             $datos = DB::query("SELECT u.pkintid_grua, u.vchnombre_grua
                 FROM tblgruaxchofer g INNER JOIN tblunidades u ON u.pkintid_grua = g.fkintid_grua
-                WHERE g.fkintid_empleado = :operador AND u.bitservicio_asig = 0 ORDER BY g.tiporelacion",
-                [':operador' => $id]);
+                LEFT JOIN tblbitacora b ON b.pkvchid_bis = :bis
+                    AND b.fkintid_sucursal = :sucursal AND b.fkintid_grua = u.pkintid_grua
+                WHERE g.fkintid_empleado = :operador
+                  AND (u.bitservicio_asig = 0 OR b.pkvchid_bis IS NOT NULL)
+                ORDER BY g.tiporelacion",
+                [':operador' => $id, ':bis' => $bis,
+                    ':sucursal' => BitacorasModel::valorSesion('cveSucursal') ?: 25]);
             
             foreach($datos as $item)
             {
@@ -200,16 +248,22 @@
                      
         }
         /*empleados*/
-        function GetAllEmpleado()
-        {   
+        function GetAllEmpleado(?string $bis = null)
+        {
             $data = [];
-            $Empleados = DB::query("SELECT pkintid_empleado, CONCAT(vchnombre, ' ', vchapellidos) AS nombre_completo,
-                fkintid_puesto, (bitestatus + 0) AS bitestatus, (bitdisponible + 0) AS bitdisponible,
-                (bitcomodin + 0) AS bitcomodin FROM tblempleados ORDER BY pkintid_empleado");
+            // En edición el operador actual debe seguir visible aunque ya esté marcado como ocupado.
+            $Empleados = DB::query("SELECT e.pkintid_empleado, CONCAT(e.vchnombre, ' ', e.vchapellidos) AS nombre_completo,
+                e.fkintid_puesto, (e.bitestatus + 0) AS bitestatus, (e.bitdisponible + 0) AS bitdisponible,
+                (e.bitcomodin + 0) AS bitcomodin, b.pkvchid_bis AS orden_actual
+                FROM tblempleados e
+                LEFT JOIN tblbitacora b ON b.pkvchid_bis = :bis
+                    AND b.fkintid_sucursal = :sucursal AND b.fkintid_empleado = e.pkintid_empleado
+                ORDER BY e.pkintid_empleado", [':bis' => (string)$bis,
+                    ':sucursal' => BitacorasModel::valorSesion('cveSucursal') ?: 25]);
 
             foreach ($Empleados as $item)
             {
-                if ($item['bitestatus'] == true && $item['bitdisponible'] == true && ($item['fkintid_puesto'] == 5 || $item['bitcomodin'] == true)){
+                if ($item['bitestatus'] == true && ($item['bitdisponible'] == true || !empty($item['orden_actual'])) && ($item['fkintid_puesto'] == 5 || $item['bitcomodin'] == true)){
                     $data[] = array('id' => $item["pkintid_empleado"],'text' =>$item["nombre_completo"]); 
                 }
             }                        
@@ -260,6 +314,43 @@
                     ($e instanceof PDOException ? 'No fue posible guardar la orden. Ningún cambio fue registrado.' :
                     ($e instanceof RuntimeException || $e instanceof InvalidArgumentException ? $e->getMessage() :
                     'No fue posible procesar la orden. Ningún cambio fue registrado.'));
+                echo json_encode(['status' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
+            }
+            exit;
+        }
+
+        public function ActualizarOrden()
+        {
+            $this->responderJson(function () {
+                if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                    throw new InvalidArgumentException('Utilice POST para actualizar la orden.');
+                }
+                $orden = json_decode(file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
+                if (!is_array($orden)) throw new InvalidArgumentException('La información de la orden no tiene un formato válido.');
+                $bis = trim((string)($orden['pkvchid_bis'] ?? ''));
+                if ($bis === '') throw new InvalidArgumentException('El BIS de la orden es obligatorio.');
+                return $this->modelo->ActualizarOrden($bis, $orden);
+            }, 'Orden actualizada correctamente');
+        }
+
+        /**
+         * Mantiene los endpoints JSON libres de warnings y con un contrato uniforme.
+         */
+        private function responderJson(callable $accion, string $mensaje = 'Consulta realizada correctamente'): void
+        {
+            ini_set('display_errors', '0');
+            header('Content-Type: application/json; charset=utf-8');
+            try {
+                $data = $accion();
+                echo json_encode(['status' => true, 'message' => $mensaje, 'data' => $data],
+                    JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            } catch (Throwable $e) {
+                error_log('Bitacoras JSON: ' . $e->getMessage());
+                $esSolicitud = $e instanceof InvalidArgumentException || $e instanceof JsonException;
+                http_response_code($esSolicitud ? 400 : ($e instanceof RuntimeException ? 404 : 500));
+                $message = $e instanceof PDOException
+                    ? 'No fue posible procesar la solicitud en la base de datos.'
+                    : $e->getMessage();
                 echo json_encode(['status' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
             }
             exit;

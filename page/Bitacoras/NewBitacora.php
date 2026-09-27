@@ -1,3 +1,7 @@
+<?php
+$modoOrden = isset($modoOrden) && $modoOrden === 'editar' ? 'editar' : 'nuevo';
+$bisOrden = isset($bisOrden) ? (string)$bisOrden : null;
+?>
 <html>
 <head>
 <meta charset="utf-8">
@@ -82,12 +86,12 @@
         <div class="erp-toolbar">
             <div class="erp-toolbar-left">
                 <span class="erp-toolbar-title">
-                    <i class="fa fa-file-text-o"></i>Orden de Servicio
+                    <i class="fa fa-file-text-o"></i><?= $modoOrden === 'editar' ? 'Editar Orden de Servicio' : 'Orden de Servicio' ?>
                 </span>
             </div>
             <div class="erp-toolbar-right">
-                <button type="button" id="btnnuevo" class="erp-btn success" onClick="frmServicios_ActivarFormulario();"><i class="fa fa-file"></i> Nuevo </button>
-                <button type="button" id="btngenerar" class="erp-btn primary"><i class="fa fa-save"></i> Generar</button>                        
+                <button type="button" id="btnnuevo" class="erp-btn success" onClick="frmServicios_ActivarFormulario();"<?= $modoOrden === 'editar' ? ' hidden' : '' ?>><i class="fa fa-file"></i> Nuevo </button>
+                <button type="button" id="btngenerar" class="erp-btn primary"><i class="fa fa-save"></i> <?= $modoOrden === 'editar' ? 'Actualizar' : 'Generar' ?></button>
                 <button type="button" id="btncancelar" class="erp-btn danger" onclick="frmServicios_DesactivarFormulario();"><i class="fa fa-remove"></i>Cancelar</button>
                 <button type="button" class="erp-btn warning"> <i class="fa fa-print"></i> Imprimir</button>
             </div>          
@@ -515,8 +519,6 @@
     <script src="<?= PLUGINS ?>/fastclick/fastclick.js"></script>
     <!-- AdminLTE App -->
     <script src="<?= DIST ?>/js/app.min.js"></script>
-    <!-- AdminLTE for demo purposes -->
-    <script src="<?= DIST ?>/js/demo.js"></script>
     <script src="<?= CSS ?>/kendo/js/kendo.all.min.js"></script>           
     <script src="<?= PLUGINS ?>/select2/select2.full.min.js"></script>          
     <script src="<?= LIBS ?>/sweetalert2/sweetalert2.min.js"></script>         
@@ -534,6 +536,8 @@
     <script src="<?= JS ?>/funciones.js"></script>
     <script>
         window.ORDEN_CONFIG = {
+            modo: <?= json_encode($modoOrden) ?>,
+            bis: <?= json_encode($bisOrden, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
             baseUrl: <?= json_encode(base_url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
             vehiculos: <?= json_encode(json_decode($tipclasif), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
             empleados: <?= json_encode(json_decode($Empleado), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
@@ -555,6 +559,10 @@
         <script src="https://maps.googleapis.com/maps/api/js?key=<?= rawurlencode(GOOGLE_MAPS_API_KEY) ?>&amp;libraries=places&amp;language=es&amp;region=MX" onerror="window.erpGoogleMapsError()"></script>
     <?php endif; ?>
     <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-api.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-api.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-grid.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-grid.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-mapa.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-mapa.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-form.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-form.js')) ?>"></script>
+    <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-validacion.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-validacion.js')) ?>"></script>
     <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-ui.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-ui.js')) ?>"></script>
     <script src="<?= ASSETS ?>/app/js/bitacoras/orden-servicio/orden-servicio.js?v=<?= rawurlencode((string)filemtime(ROOT . '/assets/app/js/bitacoras/orden-servicio/orden-servicio.js')) ?>"></script>
 </html>

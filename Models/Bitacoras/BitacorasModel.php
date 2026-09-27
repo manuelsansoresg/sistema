@@ -154,6 +154,195 @@ class BitacorasModel extends DB
         $this->consulta($pdo, $sql, array_values($data));
     }
 
+    private function actualizar(PDO $pdo, string $table, array $data, string $where, array $whereParams): int
+    {
+        $this->exigirColumnas($table, array_keys($data));
+        $assignments = array_map(function ($column) {
+            return '`' . $column . '` = ?';
+        }, array_keys($data));
+        $sql = 'UPDATE ' . $this->tabla($table, true) . ' SET ' . implode(', ', $assignments) . ' WHERE ' . $where;
+        return $this->consulta($pdo, $sql, array_merge(array_values($data), $whereParams))->rowCount();
+    }
+
+    private function obtenerConexion(): PDO
+    {
+        return $this->pdo ?: (new Conexion())->conect();
+    }
+
+    private function sucursalActual(): int
+    {
+        // La instalación actual conserva la sucursal 25 como respaldo para sesiones legacy.
+        return (int)(self::valorSesion('cveSucursal') ?: 25);
+    }
+
+    private function usuarioActual(): int
+    {
+        return (int)(self::valorSesion('IdUsuario') ?: 2);
+    }
+
+    /* =========================================================
+     * CONSULTA DE ÓRDENES
+     * ========================================================= */
+
+    /**
+     * Recupera las órdenes de la sucursal en una sola consulta.
+     *
+     * @return array
+     */
+    public function ObtenerOrdenes(int $inicio = 0, int $limite = 25, string $buscar = ''): array
+    {
+        $pdo = $this->obtenerConexion();
+        $this->cargarEsquema($pdo);
+        $from = ' FROM ' . $this->tabla('tblbitacora') . ' b
+                LEFT JOIN ' . $this->tabla('TblClientes_Sucursal') . ' cs
+                    ON cs.pkintid_cliente_sucursal = b.fkintid_cliente_sucursal
+                LEFT JOIN ' . $this->tabla('TblClientes') . ' c ON c.pkintid_cliente = cs.fkintid_cliente
+                LEFT JOIN ' . $this->tabla('TblTipo') . ' t ON t.pkintid_tipo = b.fkintid_tipo
+                LEFT JOIN ' . $this->tabla('TblMarca') . ' m ON m.pkintid_marca = t.fkintid_marca
+                LEFT JOIN ' . $this->tabla('TblClas_Vehiculo') . ' cv
+                    ON cv.pkintid_clasvehiculo = b.fkintid_clasvehiculo
+                LEFT JOIN ' . $this->tabla('tblempleados') . ' e ON e.pkintid_empleado = b.fkintid_empleado
+                LEFT JOIN ' . $this->tabla('tblunidades') . ' u ON u.pkintid_grua = b.fkintid_grua';
+        $where = ' WHERE b.fkintid_sucursal = ?';
+        $params = [$this->sucursalActual()];
+        if ($buscar !== '') {
+            $where .= ' AND (b.vchfolio LIKE ? OR b.pkvchid_bis LIKE ? OR c.vchrazon_social LIKE ?
+                OR b.vchsolicita LIKE ? OR b.vchafiliado LIKE ? OR b.vchplacas LIKE ?
+                OR CONCAT_WS(" ", e.vchnombre, e.vchapellidos) LIKE ? OR u.vchnombre_grua LIKE ?)';
+            $like = '%' . $buscar . '%';
+            for ($i = 0; $i < 8; $i++) $params[] = $like;
+        }
+        $total = (int)$this->consulta($pdo,
+            'SELECT COUNT(*) FROM ' . $this->tabla('tblbitacora') . ' WHERE fkintid_sucursal = ?',
+            [$this->sucursalActual()])->fetchColumn();
+        $filtrados = $buscar === '' ? $total : (int)$this->consulta($pdo, 'SELECT COUNT(*)' . $from . $where, $params)->fetchColumn();
+        $sql = 'SELECT b.vchfolio AS folio, b.pkvchid_bis, b.intno_serv, b.dtfecha_serv,
+                    c.vchrazon_social AS cliente, b.vchsolicita AS solicitante,
+                    b.vchafiliado AS asegurado,
+                    CONCAT_WS(" ", cv.vchconcepto, m.vchmarca, t.vchtipo) AS vehiculo,
+                    b.vchplacas AS placas,
+                    CONCAT_WS(" ", e.vchnombre, e.vchapellidos) AS operador,
+                    u.vchnombre_grua AS grua, b.vchdir_contacto AS contacto,
+                    b.vchdir_entrega AS destino, b.vchtipo_servicio AS local_foraneo,
+                    b.vchestatus AS estatus, b.mnsaldo_orden AS total' . $from . $where .
+                ' ORDER BY b.dtfecha_serv DESC, b.pkvchid_bis DESC LIMIT ? OFFSET ?';
+        $params[] = max(1, min($limite, 100));
+        $params[] = max(0, $inicio);
+        return ['items' => $this->consulta($pdo, $sql, $params)->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $total, 'filtrados' => $filtrados];
+    }
+
+    /**
+     * Recupera una orden completa para hidratar el formulario de edición.
+     *
+     * @param string $bis Identificador pkvchid_bis.
+     * @return array
+     */
+    public function ObtenerOrden(string $bis): array
+    {
+        $pdo = $this->obtenerConexion();
+        $this->cargarEsquema($pdo);
+        $sql = 'SELECT b.*, t.fkintid_marca, t.intid_clasvehiculo,
+                    cv.vchconcepto AS clasificacion_texto, m.vchmarca AS marca_texto,
+                    t.vchtipo AS tipo_texto,
+                    CONCAT_WS(" ", e.vchnombre, e.vchapellidos) AS operador_texto,
+                    u.vchnombre_grua AS grua_texto
+                FROM ' . $this->tabla('tblbitacora') . ' b
+                LEFT JOIN ' . $this->tabla('TblTipo') . ' t ON t.pkintid_tipo = b.fkintid_tipo
+                LEFT JOIN ' . $this->tabla('TblMarca') . ' m ON m.pkintid_marca = t.fkintid_marca
+                LEFT JOIN ' . $this->tabla('TblClas_Vehiculo') . ' cv
+                    ON cv.pkintid_clasvehiculo = b.fkintid_clasvehiculo
+                LEFT JOIN ' . $this->tabla('tblempleados') . ' e ON e.pkintid_empleado = b.fkintid_empleado
+                LEFT JOIN ' . $this->tabla('tblunidades') . ' u ON u.pkintid_grua = b.fkintid_grua
+                WHERE b.pkvchid_bis = ? AND b.fkintid_sucursal = ?';
+        $cabecera = $this->consulta($pdo, $sql, [$bis, $this->sucursalActual()])->fetch(PDO::FETCH_ASSOC);
+        if (!$cabecera) {
+            throw new RuntimeException('La orden no existe o pertenece a otra sucursal.');
+        }
+
+        $detalleSql = 'SELECT d.fkintid_tarifa AS idconcepto,
+                    d.fkintid_cliente_sucursal AS idcliente, d.fkintid_tipocargo AS idcargo,
+                    c.vchrazon_social AS cliente, COALESCE(t.vchleyenda, t.vchdescripcion) AS servicio,
+                    tc.vchdescripcion AS cargo, d.dmcantidad AS cantidad,
+                    d.mnprecio_unitario AS precio, t.mnprecio_unitario AS precioBase,
+                    d.mnsubtotal AS subtotal, d.mniva AS iva,
+                    d.mnretencion AS retencion, d.mnsaldo AS total,
+                    d.vchkm_cubre AS km, d.vchkm_cubrenomina AS kmn,
+                    d.vchcomp_pago AS docto, d.vchno_autorizacion AS asistencia,
+                    d.vchno_expediente AS expendiente, (d.bitapl_comision + 0) AS ac,
+                    (s.bitretencion + 0) AS retencionAplica
+                FROM ' . $this->tabla('tbldesgloce_serv') . ' d
+                LEFT JOIN ' . $this->tabla('TblClientes_Sucursal') . ' cs
+                    ON cs.pkintid_cliente_sucursal = d.fkintid_cliente_sucursal
+                LEFT JOIN ' . $this->tabla('TblClientes') . ' c ON c.pkintid_cliente = cs.fkintid_cliente
+                LEFT JOIN ' . $this->tabla('TblTarifas') . ' t ON t.pkintid_tarifa = d.fkintid_tarifa
+                LEFT JOIN ' . $this->tabla('tblservicios') . ' s ON s.pkintid_servicio = t.fkintid_servicio
+                LEFT JOIN ' . $this->tabla('TblTipoCargo') . ' tc ON tc.pkintid_tipocargo = d.fkintid_tipocargo
+                WHERE d.fkvchid_bis = ? ORDER BY d.pkid_desgloce';
+        $detalle = $this->consulta($pdo, $detalleSql, [$bis])->fetchAll(PDO::FETCH_ASSOC);
+
+        $cita = null;
+        if (isset($this->schema['tblbitacora_cita'])) {
+            $cita = $this->consulta($pdo,
+                'SELECT dtfecha_cita, intduracion_min AS duracion, vchobservacion AS observacion
+                 FROM ' . $this->tabla('tblbitacora_cita') . '
+                 WHERE fkvchid_bis = ? AND vchestatus = "A" ORDER BY pkintid_cita DESC LIMIT 1',
+                [$bis])->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+        if ($cita) {
+            $fechaCita = new DateTimeImmutable($cita['dtfecha_cita']);
+            $cita['fecha'] = $fechaCita->format('Y-m-d');
+            $cita['hora'] = $fechaCita->format('H:i');
+            unset($cita['dtfecha_cita']);
+        }
+
+        return [
+            'pkvchid_bis' => $cabecera['pkvchid_bis'],
+            'folio' => $cabecera['vchfolio'],
+            'intno_serv' => (int)$cabecera['intno_serv'],
+            'fecha' => $cabecera['dtfecha_serv'],
+            'vehiculo' => [
+                'tipo' => (int)$cabecera['fkintid_clasvehiculo'],
+                'tipoTexto' => $cabecera['clasificacion_texto'],
+                'marca' => (int)$cabecera['fkintid_marca'],
+                'marcaTexto' => $cabecera['marca_texto'],
+                'clase' => (int)$cabecera['fkintid_tipo'],
+                'claseTexto' => $cabecera['tipo_texto'],
+                'color' => $cabecera['vchcolor'], 'placa' => $cabecera['vchplacas'],
+                'modelo' => $cabecera['vchanio'], 'serie' => $cabecera['vchno_serie'],
+                'motor' => $cabecera['vchno_motor']
+            ],
+            'servicio' => [
+                'solicita' => $cabecera['vchsolicita'], 'asegurado' => $cabecera['vchafiliado'],
+                'contacto' => $cabecera['vchdir_contacto'], 'etiqcont' => $cabecera['vchetiqueta_contacto'],
+                'termino' => $cabecera['vchdir_entrega'], 'etiqterm' => $cabecera['vchetiqueta_destino'],
+                'telefono' => $cabecera['vchtelefono_otro'], 'celular' => $cabecera['vchtelefono_cel'],
+                'clave' => (int)$cabecera['fkintid_clave'],
+                'operador' => (int)$cabecera['fkintid_empleado'], 'operadorTexto' => $cabecera['operador_texto'],
+                'grua' => (int)$cabecera['fkintid_grua'], 'gruaTexto' => $cabecera['grua_texto'],
+                'promesa' => (int)$cabecera['inttiempo_promesa_min'], 'camino' => $cabecera['vchservicio']
+            ],
+            'opciones' => [
+                'local' => $cabecera['vchtipo_servicio'] === 'L',
+                'foraneo' => $cabecera['vchtipo_servicio'] === 'F',
+                'citas' => (bool)$cabecera['bitcita']
+            ],
+            'ubicaciones' => [
+                'contacto' => array_merge(['direccion' => $cabecera['vchdir_contacto']], $this->parsearCoordenadas($cabecera['vchcampo1'])),
+                'termino' => array_merge(['direccion' => $cabecera['vchdir_entrega']], $this->parsearCoordenadas($cabecera['vchcampo2']))
+            ],
+            'cita' => $cita,
+            'comentarios' => $cabecera['vchobservaciones1'],
+            'observaciones' => $cabecera['vchobservaciones'],
+            'ubicacion' => $cabecera['vchubicacion'],
+            'detalle' => $detalle
+        ];
+    }
+
+    /* =========================================================
+     * CREACIÓN DE ORDEN
+     * ========================================================= */
+
     public function GuardarOrden(array $orden): array
     {
         self::validar($orden);
@@ -253,6 +442,231 @@ class BitacorasModel extends DB
         }, $this->pdo);
     }
 
+    /* =========================================================
+     * EDICIÓN DE ORDEN
+     * ========================================================= */
+
+    /**
+     * Actualiza los datos capturables sin regenerar folio, BIS, servicio o tiempos.
+     *
+     * @param string $bis Identificador inmutable de la orden.
+     * @param array $orden Datos normalizados por el formulario compartido.
+     * @return array
+     */
+    public function ActualizarOrden(string $bis, array $orden): array
+    {
+        self::validar($orden);
+        $sucursal = $this->sucursalActual();
+        $usuario = $this->usuarioActual();
+
+        return Conexion::transaction(function (PDO $pdo) use ($bis, $orden, $sucursal, $usuario) {
+            $this->cargarEsquema($pdo);
+            foreach (['tblsucursal', 'tblbitacora', 'tbltiempo_km', 'tbldesgloce_serv', 'tblempleados', 'tblunidades'] as $table) {
+                $this->tabla($table, true);
+            }
+
+            $cabecera = $this->consulta($pdo,
+                'SELECT vchfolio, pkvchid_bis, intno_serv, fkintid_empleado, fkintid_grua
+                 FROM ' . $this->tabla('tblbitacora') . '
+                 WHERE pkvchid_bis = ? AND fkintid_sucursal = ? FOR UPDATE',
+                [$bis, $sucursal])->fetch(PDO::FETCH_ASSOC);
+            if (!$cabecera) {
+                throw new RuntimeException('La orden no existe o pertenece a otra sucursal.');
+            }
+
+            $vehiculo = $orden['vehiculo'];
+            $servicio = $orden['servicio'];
+            $this->validarVehiculo($pdo, $vehiculo, $sucursal);
+            $this->validarClave($pdo, (int)$servicio['clave']);
+
+            $fiscal = $this->consulta($pdo,
+                'SELECT dciva, dcretencion FROM ' . $this->tabla('tblsucursal') . ' WHERE pkintid_sucursal = ? FOR UPDATE',
+                [$sucursal])->fetch(PDO::FETCH_ASSOC);
+            if (!$fiscal) throw new RuntimeException('No fue posible cargar la configuración de la sucursal.');
+            $tasa = self::numero($fiscal['dciva'], 'IVA configurado en la sucursal');
+            $retencion = self::numero($fiscal['dcretencion'], 'retención configurada en la sucursal');
+            if ($tasa > 1 || $retencion > 1) throw new RuntimeException('Revise las tasas fiscales de la sucursal.');
+
+            $localForaneo = ($orden['opciones']['local'] ?? false) === true ? 'L' : 'F';
+            $detalle = $this->prepararDetalle($pdo, $orden['detalle'], $sucursal, $localForaneo, $tasa, $retencion);
+            $operadorAnterior = (int)$cabecera['fkintid_empleado'];
+            $gruaAnterior = (int)$cabecera['fkintid_grua'];
+            $operadorNuevo = (int)$servicio['operador'];
+            $gruaNueva = (int)$servicio['grua'];
+
+            $this->validarRecursosEdicion($pdo, $operadorAnterior, $operadorNuevo, $gruaAnterior, $gruaNueva);
+
+            $datosCabecera = [
+                'vchsolicita' => self::texto($servicio['solicita'] ?? ''),
+                'vchafiliado' => self::texto($servicio['asegurado'] ?? ''),
+                'fkintid_clave' => (int)$servicio['clave'], 'fkintid_tipo' => (int)$vehiculo['clase'],
+                'vchanio' => self::texto($vehiculo['modelo'] ?? ''), 'vchcolor' => self::texto($vehiculo['color'] ?? ''),
+                'vchplacas' => self::texto($vehiculo['placa'] ?? ''), 'vchno_serie' => self::texto($vehiculo['serie'] ?? ''),
+                'vchno_motor' => self::texto($vehiculo['motor'] ?? ''),
+                'fkintid_grua' => $gruaNueva, 'fkintid_empleado' => $operadorNuevo,
+                'fkintid_cliente_sucursal' => $detalle[0]['fkintid_cliente_sucursal'],
+                'vchdir_contacto' => self::texto($servicio['contacto']),
+                'vchetiqueta_contacto' => self::texto($servicio['etiqcont'] ?? ''),
+                'vchdir_entrega' => self::texto($servicio['termino']),
+                'vchetiqueta_destino' => self::texto($servicio['etiqterm'] ?? ''),
+                'inttiempo_promesa_min' => empty($servicio['promesa']) ? 0 : (int)$servicio['promesa'],
+                'vchtelefono_cel' => self::texto($servicio['celular'] ?? ''),
+                'vchtelefono_otro' => self::texto($servicio['telefono'] ?? ''),
+                'fkintid_usuario' => $usuario, 'dtfecha_usuario' => date('Y-m-d'),
+                'vchservicio' => $servicio['camino'] ?? 'S',
+                'fkintid_clasvehiculo' => (int)$vehiculo['tipo'], 'vchtipo_servicio' => $localForaneo,
+                'vchobservaciones' => self::texto($orden['observaciones'] ?? ''),
+                'vchobservaciones1' => self::texto($orden['comentarios'] ?? ''),
+                'vchubicacion' => self::texto($orden['ubicacion'] ?? ''),
+                // vchcampo1/2 son los campos legacy oficiales para coordenadas "lat,lon".
+                'vchcampo1' => $this->coordenadas($orden['ubicaciones']['contacto'] ?? []),
+                'vchcampo2' => $this->coordenadas($orden['ubicaciones']['termino'] ?? []),
+                'mnsaldo_orden' => round(array_sum(array_column($detalle, 'mnsaldo')), 2),
+                'bitcita' => ($orden['opciones']['citas'] ?? false) === true ? 1 : 0,
+                'dtfecha_cita' => ($orden['opciones']['citas'] ?? false) === true ? self::fechaCita($orden['cita']) : null
+            ];
+            $this->actualizar($pdo, 'tblbitacora', $datosCabecera, 'pkvchid_bis = ? AND fkintid_sucursal = ?', [$bis, $sucursal]);
+
+            $this->reemplazarDetalleOrden($pdo, $bis, $usuario, $detalle);
+            $this->cambiarOperadorOrden($pdo, $operadorAnterior, $operadorNuevo);
+            $this->cambiarGruaOrden($pdo, $gruaAnterior, $gruaNueva);
+            $this->actualizarCita($pdo, $bis, $usuario, $orden);
+            $this->actualizarTiempoPromesa($pdo, $bis, (int)($servicio['promesa'] ?? 0));
+
+            return [
+                'orden' => $cabecera['vchfolio'], 'folio' => $cabecera['vchfolio'],
+                'pkvchid_bis' => $cabecera['pkvchid_bis'], 'intno_serv' => (int)$cabecera['intno_serv']
+            ];
+        }, $this->pdo);
+    }
+
+    private function validarVehiculo(PDO $pdo, array $vehiculo, int $sucursal): void
+    {
+        $tipo = $this->consulta($pdo,
+            'SELECT t.pkintid_tipo FROM ' . $this->tabla('TblTipo') . ' t
+             INNER JOIN ' . $this->tabla('TblMarca') . ' m ON m.pkintid_marca = t.fkintid_marca
+             WHERE t.pkintid_tipo = ? AND t.fkintid_marca = ? AND t.intid_clasvehiculo = ?
+               AND t.fkintid_sucursal = ? AND m.bitestatus = 1',
+            [(int)$vehiculo['clase'], (int)$vehiculo['marca'], (int)$vehiculo['tipo'], $sucursal])->fetch();
+        if (!$tipo) throw new InvalidArgumentException('Marca y Tipo deben corresponder al vehículo y a la sucursal.');
+    }
+
+    private function validarClave(PDO $pdo, int $clave): void
+    {
+        if (!$this->consulta($pdo,
+            'SELECT pkintid_clave FROM ' . $this->tabla('tblclave') . ' WHERE pkintid_clave = ? AND bitestado = 1',
+            [$clave])->fetch()) {
+            throw new InvalidArgumentException('La clave del servicio no existe.');
+        }
+    }
+
+    /* =========================================================
+     * RECURSOS: OPERADOR / GRÚA
+     * ========================================================= */
+
+    /**
+     * Permite conservar los recursos ocupados por esta orden, pero exige que todo
+     * recurso nuevo continúe disponible y relacionado entre sí.
+     */
+    private function validarRecursosEdicion(PDO $pdo, int $operadorAnterior, int $operadorNuevo, int $gruaAnterior, int $gruaNueva): void
+    {
+        $operador = $this->consulta($pdo,
+            'SELECT (bitdisponible + 0) AS disponible, (bitestatus + 0) AS activo,
+                    fkintid_puesto, (bitcomodin + 0) AS comodin
+             FROM ' . $this->tabla('tblempleados') . ' WHERE pkintid_empleado = ? FOR UPDATE',
+            [$operadorNuevo])->fetch(PDO::FETCH_ASSOC);
+        if (!$operador || !(int)$operador['activo'] || ((int)$operador['fkintid_puesto'] !== 5 && !(int)$operador['comodin'])) {
+            throw new RuntimeException('El operador no está habilitado para el servicio.');
+        }
+        if ($operadorNuevo !== $operadorAnterior && !(int)$operador['disponible']) {
+            throw new RuntimeException('El nuevo operador está ocupado.');
+        }
+
+        $grua = $this->consulta($pdo,
+            'SELECT (bitservicio_asig + 0) AS ocupada FROM ' . $this->tabla('tblunidades') . '
+             WHERE pkintid_grua = ? FOR UPDATE', [$gruaNueva])->fetch(PDO::FETCH_ASSOC);
+        if (!$grua || ($gruaNueva !== $gruaAnterior && (int)$grua['ocupada'])) {
+            throw new RuntimeException('La nueva grúa está ocupada o no existe.');
+        }
+        if (!$this->consulta($pdo,
+            'SELECT fkintid_grua FROM ' . $this->tabla('tblgruaxchofer') . '
+             WHERE fkintid_grua = ? AND fkintid_empleado = ?', [$gruaNueva, $operadorNuevo])->fetch()) {
+            throw new InvalidArgumentException('La grúa no está asignada al operador seleccionado.');
+        }
+    }
+
+    private function reemplazarDetalleOrden(PDO $pdo, string $bis, int $usuario, array $detalle): void
+    {
+        $this->consulta($pdo, 'DELETE FROM ' . $this->tabla('tbldesgloce_serv', true) . ' WHERE fkvchid_bis = ?', [$bis]);
+        $now = $this->consulta($pdo, 'SELECT NOW() AS fecha')->fetch(PDO::FETCH_ASSOC)['fecha'];
+        $this->insertarDetalle($pdo, $bis, $usuario, $now, $detalle);
+    }
+
+    private function cambiarOperadorOrden(PDO $pdo, int $anterior, int $nuevo): void
+    {
+        if ($anterior === $nuevo) return;
+        $this->consulta($pdo, 'UPDATE ' . $this->tabla('tblempleados', true) . ' SET bitdisponible = 1 WHERE pkintid_empleado = ?', [$anterior]);
+        if ($this->consulta($pdo,
+            'UPDATE ' . $this->tabla('tblempleados', true) . ' SET bitdisponible = 0
+             WHERE pkintid_empleado = ? AND bitdisponible = 1', [$nuevo])->rowCount() !== 1) {
+            throw new RuntimeException('El nuevo operador dejó de estar disponible.');
+        }
+    }
+
+    private function cambiarGruaOrden(PDO $pdo, int $anterior, int $nueva): void
+    {
+        if ($anterior === $nueva) return;
+        $this->consulta($pdo, 'UPDATE ' . $this->tabla('tblunidades', true) . ' SET bitservicio_asig = 0 WHERE pkintid_grua = ?', [$anterior]);
+        if ($this->consulta($pdo,
+            'UPDATE ' . $this->tabla('tblunidades', true) . ' SET bitservicio_asig = 1
+             WHERE pkintid_grua = ? AND bitservicio_asig = 0', [$nueva])->rowCount() !== 1) {
+            throw new RuntimeException('La nueva grúa dejó de estar disponible.');
+        }
+    }
+
+    private function actualizarCita(PDO $pdo, string $bis, int $usuario, array $orden): void
+    {
+        if (!isset($this->schema['tblbitacora_cita'])) return;
+        $activa = ($orden['opciones']['citas'] ?? false) === true;
+        $existente = $this->consulta($pdo,
+            'SELECT pkintid_cita FROM ' . $this->tabla('tblbitacora_cita') . '
+             WHERE fkvchid_bis = ? ORDER BY pkintid_cita DESC LIMIT 1 FOR UPDATE', [$bis])->fetch(PDO::FETCH_ASSOC);
+        if (!$activa) {
+            if ($existente) $this->actualizar($pdo, 'tblbitacora_cita', ['vchestatus' => 'I'], 'pkintid_cita = ?', [(int)$existente['pkintid_cita']]);
+            return;
+        }
+
+        $fecha = self::fechaCita($orden['cita']);
+        $data = [
+            'dtfecha_cita' => $fecha, 'intduracion_min' => (int)$orden['cita']['duracion'],
+            'vchobservacion' => self::texto($orden['cita']['observacion'] ?? ''), 'vchestatus' => 'A',
+            'fkintid_usuario_modificacion' => $usuario, 'dtfecha_modificacion' => date('Y-m-d H:i:s')
+        ];
+        if ($existente) {
+            $this->actualizar($pdo, 'tblbitacora_cita', $data, 'pkintid_cita = ?', [(int)$existente['pkintid_cita']]);
+        } else {
+            unset($data['fkintid_usuario_modificacion'], $data['dtfecha_modificacion']);
+            $this->insertar($pdo, 'tblbitacora_cita', array_merge([
+                'fkvchid_bis' => $bis, 'fkintid_usuario' => $usuario, 'dtfecha_captura' => date('Y-m-d H:i:s')
+            ], $data));
+        }
+    }
+
+    private function actualizarTiempoPromesa(PDO $pdo, string $bis, int $minutos): void
+    {
+        // Nunca se reemplaza tbltiempo_km: sólo se ajusta la promesa mientras el contacto real no exista.
+        $sql = 'UPDATE ' . $this->tabla('tbltiempo_km', true) . '
+                SET dtcontacto_aprox = CASE
+                    WHEN ? > 0 THEN DATE_ADD(dtllamada, INTERVAL ? MINUTE)
+                    ELSE NULL END
+                WHERE pkvchid_bis = ? AND dtcontacto IS NULL';
+        $this->consulta($pdo, $sql, [$minutos, $minutos, $bis]);
+    }
+
+    /* =========================================================
+     * TIEMPOS Y UBICACIONES
+     * ========================================================= */
+
     private function insertarTiempoInicial(PDO $pdo, string $bis, string $now, array $orden): void
     {
         $data = [
@@ -289,6 +703,25 @@ class BitacorasModel extends DB
         }
         return $location['lat'] . ',' . $location['lon'];
     }
+
+    /**
+     * Convierte el formato legacy "lat,lon" sin intentar geocodificarlo.
+     */
+    private function parsearCoordenadas(?string $valor): array
+    {
+        $partes = array_map('trim', explode(',', (string)$valor));
+        if (count($partes) !== 2 || !is_numeric($partes[0]) || !is_numeric($partes[1])) {
+            return ['lat' => null, 'lon' => null];
+        }
+        $lat = (float)$partes[0];
+        $lon = (float)$partes[1];
+        if (abs($lat) > 90 || abs($lon) > 180) return ['lat' => null, 'lon' => null];
+        return ['lat' => $lat, 'lon' => $lon];
+    }
+
+    /* =========================================================
+     * DETALLE DE SERVICIO
+     * ========================================================= */
 
     private function prepararDetalle(PDO $pdo, array $items, int $sucursal, string $tipoServicio, float $tasa, float $retencion): array
     {
