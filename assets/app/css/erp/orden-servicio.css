@@ -2003,9 +2003,45 @@
 .erp-layout input:focus, .erp-layout textarea:focus, .erp-layout button:focus-visible { outline: 2px solid #1570ef; outline-offset: 2px; }
 .erp-grid-body, .erp-card-grid { min-width: 0; max-width: 100%; }
 .erp-grid-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
-.erp-grid-scroll #grid { min-width: 1450px; max-width: none; }
-#grid .k-grid-content { overflow-x: auto; }
+.erp-grid-scroll #grid { min-width: 1540px; max-width: none; }
+#grid .k-grid-content { overflow-x: hidden; }
+#grid .k-grid-header { padding-right: 0 !important; }
+#grid .k-grid-header-wrap { border-right: 0; }
+#grid .k-grid-header table,
+#grid .k-grid-content table { table-layout: fixed; }
+#grid .k-grid-header th,
+#grid .k-grid-content td { box-sizing: border-box; }
 #grid td { min-height: 36px; padding: 10px 8px; font-size: 12px; }
+.erp-grid-actions-header,
+.erp-grid-actions-cell {
+    position: sticky;
+    right: 0;
+    border-left: 1px solid #dfe3e8 !important;
+    background: #fff !important;
+    box-shadow: -3px 0 6px rgba(16,24,40,.06);
+}
+.erp-grid-actions-header { z-index: 4; background: #f8fafc !important; }
+.erp-grid-actions-cell { z-index: 2; padding: 3px 5px !important; }
+.erp-row-actions { display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.erp-row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #b8c5d1;
+    border-radius: 6px;
+    background: #fff;
+    color: #1677c8;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+.erp-row-action:hover { border-color: #1677c8; background: #eff8ff; }
+.erp-row-action.erp-row-remove { border-color: #f3b8b5; color: #d92d20; }
+.erp-row-action.erp-row-remove:hover { border-color: #d92d20; background: #fff1f0; }
+.erp-row-action:focus-visible { outline: 2px solid #1570ef; outline-offset: 1px; }
 .erp-grid-disabled { pointer-events: none; opacity: .65; }
 .erp-grid-header { height: auto; min-height: 42px; flex-wrap: nowrap; gap: 12px; }
 .erp-grid-title small { white-space: normal; font-size: 11px; line-height: 1.5; }

@@ -909,11 +909,49 @@ OrdenServicio.initCalculo();
                     "# } #",
                 editable: false, headerAttributes: { class: "erp-grid-center" },
                 attributes: { class: "erp-grid-center" }
+            },
+            /* ACCIONES DE LA FILA */
+            {
+                title: "Acciones", width: 92, editable: false, sortable: false,
+                headerAttributes: { class: "erp-grid-center erp-grid-actions-header" },
+                attributes: { class: "erp-grid-center erp-grid-actions-cell" },
+                template:
+                    "<div class='erp-row-actions'>" +
+                        "<button type='button' class='erp-row-action erp-row-add' title='Agregar fila' aria-label='Agregar fila'>" +
+                            "<i class='fa fa-plus' aria-hidden='true'></i>" +
+                        "</button>" +
+                        "<button type='button' class='erp-row-action erp-row-remove' title='Quitar fila' aria-label='Quitar fila'>" +
+                            "<i class='fa fa-trash' aria-hidden='true'></i>" +
+                        "</button>" +
+                    "</div>"
             }
         ];
 
        
         detalle.init();
+
+        /* Kendo usa tablas separadas para header y contenido. Igualamos su ancho real
+           para que los separadores permanezcan alineados también al redimensionar. */
+        function alinearColumnasDetalle()
+        {
+            var $tablaContenido=detalle.grid.tbody.closest('table');
+            var $tablaHeader=detalle.grid.thead.closest('table');
+            var ancho=$tablaContenido.outerWidth();
+            if (ancho)
+            {
+                $tablaHeader.css('width', ancho+'px');
+            }
+        }
+
+        detalle.grid.bind('dataBound', function(){
+            window.requestAnimationFrame(alinearColumnasDetalle);
+        });
+
+        $(window).off('resize.erpGridColumns').on('resize.erpGridColumns', function(){
+            window.requestAnimationFrame(alinearColumnasDetalle);
+        });
+
+        alinearColumnasDetalle();
 
         $('#btnagregar_row').on('click',function(){
             if ($('#btngenerar').data('guardando')) return;
@@ -926,6 +964,29 @@ OrdenServicio.initCalculo();
             var item=detalle.grid.dataItem(row);
             if (!item) { Swal.fire({icon:'info',title:'Seleccione una fila del detalle'}); return; }
             detalle.grid.closeCell(); detalle.ds.remove(item); actualizarResumenOrden();
+        });
+
+        /* Acciones directas por fila. Se delegan porque Kendo vuelve a dibujar el tbody. */
+        $('#grid')
+        .on('mousedown.erpRowActions', '.erp-row-action', function(e){
+            e.stopPropagation();
+        })
+        .on('click.erpRowActions', '.erp-row-add', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            if ($('#btngenerar').data('guardando')) return;
+            detalle.grid.closeCell();
+            detalle.addRow();
+        })
+        .on('click.erpRowActions', '.erp-row-remove', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            if ($('#btngenerar').data('guardando')) return;
+            var item=detalle.grid.dataItem($(this).closest('tr'));
+            if (!item) return;
+            detalle.grid.closeCell();
+            detalle.ds.remove(item);
+            actualizarResumenOrden();
         });
 
         $('#grid').attr('inert','').attr('aria-disabled','true').addClass('erp-grid-disabled');

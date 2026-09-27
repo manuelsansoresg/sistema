@@ -9,8 +9,8 @@
 .erp-grid-body .k-grid-content,
 #grid .k-grid-content {
     min-height: 84px;
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 /* Filas un poco más cómodas sin volver pesado el grid. */

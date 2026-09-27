@@ -166,7 +166,7 @@ class BitacorasModel extends DB
         $usuario = 2;
         return Conexion::transaction(function (PDO $pdo) use ($orden, $sucursal, $usuario) {
             $this->cargarEsquema($pdo);
-            foreach (['tblsucursal', 'tblbitacora', 'tbldesgloce_serv', 'tblempleados', 'tblunidades'] as $table) {
+            foreach (['tblsucursal', 'tblbitacora', 'tbltiempo_km', 'tbldesgloce_serv', 'tblempleados', 'tblunidades'] as $table) {
                 $this->tabla($table, true);
             }
             $this->exigirColumnas('tblsucursal', ['pkintid_sucursal', 'intno_bitacora', 'vchletra', 'dciva', 'dcretencion']);
@@ -230,6 +230,7 @@ class BitacorasModel extends DB
                 if ($data['bitcita']) $data['dtfecha_cita'] = self::fechaCita($orden['cita']);
             }
             $this->insertar($pdo, 'tblbitacora', $data);
+            $this->insertarTiempoInicial($pdo, $bis, $now, $orden);
             $this->insertarDetalle($pdo, $bis, $usuario, $now, $detalle);
             if (($orden['opciones']['citas'] ?? false) === true && isset($this->schema['tblbitacora_cita'])) {
                 $this->insertar($pdo, 'tblbitacora_cita', [
@@ -239,7 +240,6 @@ class BitacorasModel extends DB
                     'vchestatus' => 'A', 'fkintid_usuario' => $usuario, 'dtfecha_captura' => $now
                 ]);
             }
-            // No initial time row: the connected schema has no table for that purpose.
             if ($this->consulta($pdo, 'UPDATE ' . $this->tabla('tblempleados', true) . ' SET bitdisponible = 0 WHERE pkintid_empleado = ? AND bitdisponible = 1', [$s['operador']])->rowCount() !== 1) {
                 throw new RuntimeException('El operador dejó de estar disponible.');
             }
@@ -251,6 +251,34 @@ class BitacorasModel extends DB
             }
             return ['orden' => $folio, 'folio' => $folio, 'pkvchid_bis' => $bis, 'intno_serv' => 1];
         }, $this->pdo);
+    }
+
+    private function insertarTiempoInicial(PDO $pdo, string $bis, string $now, array $orden): void
+    {
+        $data = [
+            'pkvchid_bis' => $bis,
+            'dtllamada' => $now,
+            'bitsm' => 0,
+            'bitchecado' => 0,
+            'bitservconcluido' => 0
+        ];
+
+        if ($this->existeColumna('tbltiempo_km', 'intestatus')) {
+            $data['intestatus'] = 1;
+        }
+
+        $promesa = filter_var(
+            $orden['servicio']['promesa'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        if ($promesa !== false) {
+            $data['dtcontacto_aprox'] = (new DateTimeImmutable($now))
+                ->modify('+' . $promesa . ' minutes')
+                ->format('Y-m-d H:i:s');
+        }
+
+        $this->insertar($pdo, 'tbltiempo_km', $data);
     }
 
     private function coordenadas($location): string
