@@ -55,12 +55,24 @@
 
     app.Servicio = {
         initCalculo:function () {
+            function asignarImporteCalculado(model, campo, valor) {
+                if (Number(model.get(campo)) === valor) return;
+
+                /* Los importes permanecen bloqueados para captura manual. Kendo
+                 * impide usar model.set() en campos no editables, así que la
+                 * aplicación los actualiza internamente y notifica al grid. */
+                model._set(campo, valor);
+                model.trigger('change', {field:campo});
+            }
+
             detalle.calculateRow=function(model) {
                 var subtotal=Math.round(Number(model.get('cantidad')) * Number(model.get('precio')) * 100) / 100;
                 var iva=Math.round(subtotal * erpTasaIVA * 100) / 100;
                 var retencion=Math.round(subtotal * (model.get('retencionAplica') ? erpTasaRetencion : 0) * 100) / 100;
-                model.set('subtotal',subtotal); model.set('iva',iva); model.set('retencion',retencion);
-                model.set('total',Math.round((subtotal + iva - retencion) * 100) / 100);
+                asignarImporteCalculado(model,'subtotal',subtotal);
+                asignarImporteCalculado(model,'iva',iva);
+                model.set('retencion',retencion);
+                asignarImporteCalculado(model,'total',Math.round((subtotal + iva - retencion) * 100) / 100);
                 this.calculateTotals();
             };
         },
@@ -69,8 +81,16 @@
                 if ($('#ordenErrores').is(':visible')) app.Validacion.validarFormulario(false);
             });
             detalle.ds.bind('change',function (evento) {
+                if (evento.action === 'itemchange' &&
+                    ['cantidad','precio','retencionAplica'].indexOf(evento.field) !== -1 &&
+                    evento.items && evento.items.length) {
+                    detalle.calculateRow(evento.items[0]);
+                }
                 if (evento.action === 'itemchange' && $('#ordenErrores').is(':visible')) app.Validacion.validarFormulario(false);
             });
+
+            /* Recalcular también las filas que ya existan al iniciar o al editar una orden. */
+            detalle.ds.data().forEach(function (fila) { detalle.calculateRow(fila); });
             $('#btngenerar').off('click.erpOrden').on('click.erpOrden',function (evento) {
                 evento.preventDefault(); guardarFormulario();
             });

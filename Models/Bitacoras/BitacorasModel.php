@@ -65,7 +65,25 @@ class BitacorasModel extends DB
     {
         if ($value === null) return '';
         if (!is_scalar($value)) throw new InvalidArgumentException('Se recibió un campo de texto inválido.');
-        return trim((string)$value);
+        $texto = trim((string)$value);
+        if ($texto === '') return '';
+
+        /* tblbitacora conserva columnas latin1. Los proveedores de mapas pueden
+         * devolver caracteres Unicode como la c modificadora (ᶜ) que MySQL no
+         * puede almacenar allí. Normalizamos el texto sin perder acentos del
+         * español y transliteramos únicamente lo que latin1 no representa. */
+        $texto = strtr($texto, [
+            'ᵃ' => 'a', 'ᵇ' => 'b', 'ᶜ' => 'c', 'ᵈ' => 'd', 'ᵉ' => 'e',
+            'ᶠ' => 'f', 'ᵍ' => 'g', 'ʰ' => 'h', 'ⁱ' => 'i', 'ʲ' => 'j',
+            'ᵏ' => 'k', 'ˡ' => 'l', 'ᵐ' => 'm', 'ⁿ' => 'n', 'ᵒ' => 'o',
+            'ᵖ' => 'p', 'ʳ' => 'r', 'ˢ' => 's', 'ᵗ' => 't', 'ᵘ' => 'u',
+            'ᵛ' => 'v', 'ʷ' => 'w', 'ˣ' => 'x', 'ʸ' => 'y', 'ᶻ' => 'z'
+        ]);
+        $latin1 = iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $texto);
+        if ($latin1 === false) {
+            throw new InvalidArgumentException('Uno de los campos de texto contiene caracteres no válidos.');
+        }
+        return trim(mb_convert_encoding($latin1, 'UTF-8', 'ISO-8859-1'));
     }
 
     private static function id($value, string $label): int

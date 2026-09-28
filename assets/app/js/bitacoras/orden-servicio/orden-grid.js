@@ -13,9 +13,15 @@
         var totales = {subtotal:0, iva:0, retencion:0, total:0};
         if (!window.detalle || !detalle.ds) return;
         detalle.ds.data().forEach(function (fila) {
-            Object.keys(totales).forEach(function (campo) {
-                totales[campo] += erpNumero(erpValorModelo(fila, campo));
-            });
+            var subtotal=erpNumero(erpValorModelo(fila, 'subtotal'));
+            var iva=erpNumero(erpValorModelo(fila, 'iva'));
+            var retencion=erpNumero(erpValorModelo(fila, 'retencion'));
+
+            totales.subtotal += subtotal;
+            totales.iva += iva;
+            totales.retencion += retencion;
+            /* El total general es la suma de los importes calculados de cada concepto. */
+            totales.total += subtotal + iva - retencion;
         });
         $('#lblsubtotal').text(kendo.toString(totales.subtotal, 'c2'));
         $('#lbliva').text(kendo.toString(totales.iva, 'c2'));

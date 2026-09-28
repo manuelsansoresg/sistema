@@ -36,8 +36,9 @@
 
         private function cargarFormularioOrden(string $modo, ?string $bis = null): void
         {
+            $sucursal = (int)(BitacorasModel::valorSesion('cveSucursal') ?: 25);
             $fiscal = DB::First('SELECT dciva, dcretencion FROM tblsucursal WHERE pkintid_sucursal = :sucursal',
-                [':sucursal' => BitacorasModel::valorSesion('cveSucursal')]);
+                [':sucursal' => $sucursal]);
             $this->getView($this, $modo === 'editar' ? 'EditBitacora' : 'NewBitacora', [
                 'page_name'      => "Bitacoras",
                 'function_js'    => "Bitacora.js",
@@ -212,6 +213,11 @@
                 return;
             }
 
+            $sucursal = (int)(BitacorasModel::valorSesion('cveSucursal') ?: 25);
+            $fiscal = DB::First('SELECT dciva FROM tblsucursal WHERE pkintid_sucursal = :sucursal',
+                [':sucursal' => $sucursal]);
+            $tasaIva = isset($fiscal['dciva']) ? (float)$fiscal['dciva'] : 0.0;
+
             $data = array();
             foreach (ClienteModel::TarifaConceptos($qcve, $qLF) as $row) {
                 $data[] = array(
@@ -219,7 +225,8 @@
                     'text' => $row['VCHLEYENDA'],
                     'precio' => $row['MNPRECIO_UNITARIO'],
                     'ac' => $row['bitcomision'],
-                    'ret' => $row['bitretencion']
+                    'ret' => $row['bitretencion'],
+                    'tasaIva' => $tasaIva
                 );
             }
 

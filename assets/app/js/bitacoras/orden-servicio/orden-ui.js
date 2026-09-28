@@ -948,6 +948,12 @@ OrdenApp.Servicio.initCalculo();
             afterSelect:function(item,options)
             {                    
                 var precioCatalogo = parseFloat(item.precio) || 0;
+                var tasaIvaSucursal = parseFloat(item.tasaIva);
+
+                if (!isNaN(tasaIvaSucursal))
+                {
+                    erpTasaIVA = tasaIvaSucursal <= 1 ? tasaIvaSucursal : tasaIvaSucursal / 100;
+                }
 
                 /* Precio establecido por catálogo.Este será el precio mínimo permitido.*/
                 options.model.set("precioBase", precioCatalogo);
